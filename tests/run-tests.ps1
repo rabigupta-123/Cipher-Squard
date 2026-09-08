@@ -9,5 +9,9 @@ Write-Host "Compiling App + tests..." -ForegroundColor Cyan
 javac --add-modules jdk.httpserver -d $classes $appSrc $testSrc
 if (-not $?) { Write-Host "Compilation failed." -ForegroundColor Red; exit 1 }
 Write-Host "Running unit tests..." -ForegroundColor Cyan
-java --add-modules jdk.httpserver -cp $classes com.sentinelmail.ServerTests
+$testData = Join-Path $env:TEMP ("cs-test-data-" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Force -Path $testData | Out-Null
+$env:YARA_RULES_DIR = $testData
+$dataProp = "-Dsentinel.data.dir=$testData"
+& java --add-modules jdk.httpserver $dataProp -cp $classes com.sentinelmail.ServerTests
 exit $LASTEXITCODE

@@ -28,7 +28,9 @@ import java.util.regex.*;
 public final class App {
   private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("SENTINEL_PORT", "8080"));
   private static final Path ROOT = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-  private static final Path DATA = ROOT.resolve("data");
+  private static final Path DATA = System.getProperty("sentinel.data.dir") != null
+    ? Paths.get(System.getProperty("sentinel.data.dir")).toAbsolutePath()
+    : ROOT.resolve("data");
   private static final Path CASES = DATA.resolve("cases.ndjson");
   private static final long START_UP = System.currentTimeMillis();
   // SCORE FIX (L6 attachment hash): known-bad attachment hashes loaded from data/bad_hashes.txt.
@@ -298,7 +300,7 @@ public final class App {
     server.createContext("/api/auth/login", App::loginRoute);
     server.createContext("/api/auth/logout", App::logoutRoute);
     srv(server, "/api/auth/me", App::meRoute);
-    server.createContext("/api/analyze", App::analyze);
+    srv(server, "/api/analyze", App::analyze);
     srv(server, "/api/cases", App::cases);
     srv(server, "/api/domain-intelligence", App::domainIntelligence);
     srv(server, "/api/geolocate", App::geolocate);
