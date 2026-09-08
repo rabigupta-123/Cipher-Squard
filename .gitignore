@@ -1,0 +1,23 @@
+# Runtime data — contains password hashes, session tokens, incidents, IOCs and audit logs. Never commit.
+data/
+admintoken.txt
+
+# ClamAV signature database (regenerable via start-scanners.ps1 -Update) and per-run generated configs.
+clamav-db/
+config/
+
+# Build output.
+server/target/
+server/bin/
+tests/classes/
+
+# Stray dev artifact.
+T2.java
+
+# Local environment / secrets. Commit only .env.example.
+.env
+*.log
+
+# OS junk.
+.DS_Store
+Thumbs.db
