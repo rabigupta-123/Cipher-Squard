@@ -12,9 +12,45 @@ Built as a zero-dependency Java (JDK 25) local API plus a single-page web consol
 .\run.ps1
 ```
 
-Then open **http://127.0.0.1:8080** in a browser. The script compiles the Java engine and
-serves the web console. Paste a complete raw email (headers + body) and click **Analyze email**,
-or use **Load demo** to see the full pipeline with a realistic high-risk sample.
+Then open **http://127.0.0.1:8080** in a browser. The script compiles the Java engine, starts the
+ClamAV daemon + alert inbox, and serves the web console. Paste a complete raw email (headers +
+body) and click **Analyze email**, or use **Load demo** to see the full pipeline with a realistic
+high-risk sample.
+
+## Sign-in
+
+The platform is access-controlled. On first run a default admin is bootstrapped:
+
+- **Email:** `admin@cipher.local`
+- **Password:** `CipherSquad#2026` (override with the `SENTINEL_ADMIN_PW` environment variable)
+
+The login screen is a full orange-branded landing page with the Cipher Squad shield logo. The
+landing/login UI is intentionally adversarial: honest failure responses and hard boundaries so it
+cannot be talked around. Sessions expire after 8 hours.
+
+**Login hardening (server side):**
+
+- Passwords are stored as PBKDF2-HMAC-SHA256 (120 000 iterations, 16-byte salt) and verified with
+  constant-time comparison.
+- Brute-force throttling: failed attempts are tracked per-account **and** per-IP in a 15-minute
+  window; crossing 5 failures locks both keys for 60 s and the API answers `429` with a retry delay
+  (the lock is checked *before* password verification, so even the correct password is refused
+  while locked).
+- Timing equalization: an unknown account is verified against an equal-cost dummy hash so response
+  time cannot reveal whether an account exists, and unknown-user / wrong-password / valid-user
+  responses are identical.
+- Sessions use 32-byte SecureRandom tokens, persist across restarts until TTL, and every
+  sign-in/sign-out is written to `data/audit.ndjson` (respecting the lockout).
+
+## Testing
+
+- **Regression suite:** `tests/run-tests.ps1` compiles the engine with the 567-assertion suite and
+  reports `PASS=nnn FAIL=0`. Run it from the repository root:
+  `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`
+- **Accuracy corpus:** labeled phishing / BEC / malware / spam / clean samples are scored against
+  the live `/api/analyze` endpoint and the results are checked against risk-band targets
+  (BEC payment-diversion and executive-impersonation samples must land HIGH; clean samples must
+  stay SAFE).
 
 ## What it does
 
@@ -24,6 +60,11 @@ or use **Load demo** to see the full pipeline with a realistic high-risk sample.
 - Heuristic corpus (NLP-style): urgency, credential requests, payment diversion, executive
   impersonation, cloud-file lures, dangerous attachment types, URL patterns.
 - Scoring 0–100 with verdicts (low / suspicious / high risk) and threat categories.
+- **BEC / payment-diversion tier**: a convergent financial-request pattern (executive-impersonation
+  x finance, or finance x deadline) gets a dedicated, bounded risk uplift so URL-less business
+  email compromise is not structurally under-reported by the network/URL categories.
+  Authority-impersonation detection covers real BEC scripts ("in a board meeting", "cannot take
+  calls", "no phone", "on a plane", "client meeting").
 - **Relay tracing**: reconstructs Received hops and picks the earliest public IP.
 - **Geolocation**: maps every relay IP to country / region / city / ISP / ASN via ip-api.com
   (proxied server-side) and highlights the likely source on a geo map.
@@ -57,13 +98,16 @@ cases (localStorage), source-cluster map, tamper-evident export records, and pol
 
 ## Architecture
 
-- `index.html` — the full web console.
-- `server/src/main/java/com/sentinelmail/App.java` — JDK `HttpServer` API: `/api/analyze`,
-  `/api/geolocate`, `/api/dns`, `/api/whois`, `/api/domain-intelligence`, `/api/cases`,
-  `/api/enrichment-status`, plus `/api/scanners/status`, `/api/scanners/scan`,
-  `/api/phishguard/analyze`. No third-party dependencies.
-- `run.ps1` — compile + launch.
-- `data/cases.ndjson` — persisted case records.
+- `index.html` — the full web console (single-page, light/dark themes, orange-branded login
+  landing page with inline SVG Cipher Squad logo + favicon).
+- `server/src/main/java/com/sentinelmail/App.java` — JDK `HttpServer` API. Access-controlled
+  routes: `/api/analyze`, `/api/geolocate`, `/api/dns`, `/api/whois`, `/api/domain-intelligence`,
+  `/api/cases`, `/api/enrichment-status`, `/api/scanners/status`, `/api/scanners/scan`,
+  `/api/phishguard/analyze`, plus `/api/auth/login|logout|me`, `/api/users`, `/api/channels`,
+  `/api/self-test`, and the SOC modules (`/api/analyze/spam|dns|ssl|ddos|cloudflare`,
+  `/api/dashboard`). No third-party dependencies.
+- `run.ps1` — compile + launch, and wire up `start-scanners.ps1` + `start-alert-inbox.ps1`.
+- `data/cases.ndjson` — persisted case records (runtime data, git-ignored).
 
 Enrichment providers are hit server-side (avoids browser CORS), and every value is labelled
 with a source/time caveat. The server binds to localhost deliberately.
