@@ -846,7 +846,75 @@ tr:hover,table tr:hover,.case tr:hover{background:#f6f8fb}
 .frow:last-child{border-bottom:none}
 .frow .grow{flex:1;min-width:180px}
 .frow .pill{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid #2b3542;color:#8b95a5;white-space:nowrap}
-</style></head><body><div class="shell"><aside class="side"><div class="brand"><span class="mark"><svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><path fill="#e05d35" d="M24 3l17 5.5V22c0 11.6-7 19.9-17 23C14 41.9 7 33.6 7 22V8.5Z"/><path fill="#1c1004" d="M24 12.5l10 4V22c0 8.7-4.2 15.1-10 17.3C18.2 37.1 14 30.7 14 22v-5.5Z"/><path fill="#ffb02e" d="M24 18l5 2v4.5c0 3.4-1.7 6-5 7-3.3-1-5-3.6-5-7V20Z"/><circle cx="24" cy="24.6" r="2.2" fill="#6b2d14"/><rect x="22.6" y="26.8" width="2.8" height="5.6" rx="1.2" fill="#6b2d14"/></svg></span>Cipher Squad</div><nav class="nav"><p class="label">OPERATIONS</p><button class="active" data-v="dash">◫ <span>Command center</span></button><button data-v="unified"><span class="uni-ico">U</span><span>Unified workspace</span></button><button data-v="analyze">⌁ <span>Email analysis</span></button><button data-v="tools">🔧 <span>Forensic toolkit</span></button><button data-v="cases">▣ <span>Cases</span></button><button data-v="incidents">⚠ <span>Incidents</span></button><p class="label">SECURITY MODULES</p><button data-v="socmod">⊞ <span>SOC modules</span></button><button data-v="spam">✉ <span>Spam analysis</span></button><button data-v="dnssec">◉ <span>DNS security</span></button><button data-v="ssl">🔒 <span>SSL / TLS</span></button><button data-v="ddos">⇶ <span>DDoS analytics</span></button><button data-v="cf">☁ <span>Cloudflare</span></button><button data-v="ioc">◈ <span>IOC explorer</span></button><p class="label">FORENSIC INTEGRATIONS</p><button data-v="gmail">✉ <span>Gmail forensics</span></button><button data-v="phishguard">◎ <span>PhishGuard</span></button><button data-v="scanners">≡ <span>Scanners</span></button><p class="label">INTELLIGENCE</p><button data-v="intel">◎ <span>Threat intelligence</span></button><button data-v="reports">▤ <span>Reports</span></button><p class="label">PLATFORM</p><button data-v="integrations">⊞ <span>Integrations</span></button><button data-v="settings">⚙ <span>Policy & settings</span></button></nav><div class="sidefoot"><b>● Platform protected</b>Evidence-based multi-layer forensics</div></aside><div><header class="top"><div class="crumb"><b id="crumb">Command center</b> / Security operations</div><div class="profile"><span class="toplive-wrap"><span class="toplive"><span class="soc-dot g pulse"></span> LIVE</span><span class="topstat" id="topposture">posture ...</span><span class="topstat mono" id="topclock">--:--:-- UTC</span></span><input class="search" id="topsearch" placeholder="Search case, IP or domain…" onkeydown="if(event.key==='Enter')doSearch(this.value)"><span id="authchip"></span><div class="avatar">CS</div></div></header><main class="main"><div class="news-ticker" id="newsticker"><span class="news-lbl">LIVE CYBER NEWS</span><div class="news-track" id="newstrack"><span class="news-seq" id="newsseq"></span></div><span class="news-src" id="newssrc">feed…</span></div>
+/* ============================================================
+   ENTERPRISE SOC POLISH LAYER (append-only; palette-locked)
+   Non-color typography / spacing / motion / accessibility only.
+   ============================================================ */
+/* A. DESIGN CORE */
+:root{
+  --bs-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --bs-mono:"Cascadia Code","Cascadia Mono","Segoe UI Mono",Consolas,"Roboto Mono",Menlo,monospace;
+}
+html{scroll-behavior:smooth}
+body,button,input,select,textarea{font-family:var(--bs-sans)}
+.mono,code,pre,.dm,.topstat.mono,.case tbody td.mono,.soc-clock,.soc-stream,.soc-kpi .v,
+.uni-kpi .v,.uni-sev .unitv,.up-in input,.up-in textarea,.fx-score b,.fx-bk span,
+#spamraw,#ddoslogs,.soc-axis,.soc-legend,.soc-ticker .tk,.soc-bar{font-family:var(--bs-mono)}
+::selection{background:var(--q)}
+:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+input:focus:not(.auth-card input):not(.gmodal-head input),select:focus:not(.auth-card select),
+textarea:focus:not(.auth-card textarea){outline:none;border-color:var(--c)!important;box-shadow:0 0 0 3px var(--q)}
+#report,.soc-stream,.soc-timer,.uni-stream{scrollbar-width:thin}
+*{scroll-margin-top:86px}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .upgo.loading-led::after{display:none}
+}
+/* B. SHELL, NAVIGATION, TOP BAR, BUTTONS */
+.side{overflow-y:auto;overscroll-behavior:contain}
+.nav button{white-space:nowrap;transition:background .15s,color .15s,transform .12s ease,padding-left .15s ease}
+.nav button:hover{transform:translateX(2px)}
+.nav button:active{transform:translateX(0)}
+.search{min-height:38px;transition:border-color .15s,box-shadow .15s,width .2s ease}
+.search:focus{width:280px}
+.avatar{transition:transform .12s ease}
+.avatar:hover{transform:scale(1.06)}
+.primary,.secondary,.btn-soc{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;
+  padding:9px 16px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:.45px;
+  text-transform:uppercase;line-height:1;cursor:pointer;
+  transition:transform .12s ease,filter .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease
+}
+.primary:hover,.secondary:hover,.btn-soc:hover{transform:translateY(-1px)}
+.primary:active,.secondary:active,.btn-soc:active{transform:translateY(0)}
+.auth-btn{transition:transform .12s ease,filter .15s ease,box-shadow .15s ease}
+.auth-btn:hover{transform:translateY(-1px)}
+.auth-btn:active{transform:translateY(0)}
+.pill,.ioc-conf{display:inline-flex;align-items:center;gap:4px}
+.sbad{display:inline-flex;align-items:center;justify-content:center}
+.ioc-filter .f{transition:transform .12s ease,color .15s,background .15s,border-color .15s}
+.ioc-filter .f:hover{transform:translateY(-1px)}
+.ioc-filter .f:active{transform:translateY(0)}
+a:hover,.link:hover{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+/* C. DASHBOARD, TABLES, REPORT, SECTION HEADERS */
+.card,.stat{transition:transform .15s ease,box-shadow .15s ease}
+.card:not(.card .card):hover,.stat:hover{transform:translateY(-2px)}
+.sec{display:flex;align-items:center;gap:30px;width:100%;text-transform:uppercase;font-size:11px;letter-spacing:1px;font-weight:800}
+.sec::after{content:'';flex:1;height:1px;background:var(--l)}
+.case thead th{white-space:nowrap}
+.case tbody td{transition:background .12s ease}
+.soc-tbl th{white-space:nowrap}
+.tr-actions button{min-height:28px;border-radius:7px;cursor:pointer;transition:transform .12s ease}
+.tr-actions button:hover{transform:translateY(-1px)}
+.tr-actions button:active{transform:translateY(0)}
+/* D. SOC MODULES, FORMS, RESPONSIVE */
+.powergrid{transition:grid-template-columns .25s ease}
+.toggle:focus-visible{outline-offset:2px}
+@media(max-width:950px){.powergrid{grid-template-columns:1fr!important}}
+@media(max-width:820px){
+  table.case{display:block;max-width:100%;overflow-x:auto;white-space:nowrap}
+  table.case thead th{white-space:nowrap}
+}</style></head><body><div class="shell"><aside class="side"><div class="brand"><span class="mark"><svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true"><path fill="#e05d35" d="M24 3l17 5.5V22c0 11.6-7 19.9-17 23C14 41.9 7 33.6 7 22V8.5Z"/><path fill="#1c1004" d="M24 12.5l10 4V22c0 8.7-4.2 15.1-10 17.3C18.2 37.1 14 30.7 14 22v-5.5Z"/><path fill="#ffb02e" d="M24 18l5 2v4.5c0 3.4-1.7 6-5 7-3.3-1-5-3.6-5-7V20Z"/><circle cx="24" cy="24.6" r="2.2" fill="#6b2d14"/><rect x="22.6" y="26.8" width="2.8" height="5.6" rx="1.2" fill="#6b2d14"/></svg></span>Cipher Squad</div><nav class="nav"><p class="label">OPERATIONS</p><button class="active" data-v="dash">◫ <span>Command center</span></button><button data-v="unified"><span class="uni-ico">U</span><span>Unified workspace</span></button><button data-v="analyze">⌁ <span>Email analysis</span></button><button data-v="tools">🔧 <span>Forensic toolkit</span></button><button data-v="cases">▣ <span>Cases</span></button><button data-v="incidents">⚠ <span>Incidents</span></button><p class="label">SECURITY MODULES</p><button data-v="socmod">⊞ <span>SOC modules</span></button><button data-v="spam">✉ <span>Spam analysis</span></button><button data-v="dnssec">◉ <span>DNS security</span></button><button data-v="ssl">🔒 <span>SSL / TLS</span></button><button data-v="ddos">⇶ <span>DDoS analytics</span></button><button data-v="cf">☁ <span>Cloudflare</span></button><button data-v="ioc">◈ <span>IOC explorer</span></button><p class="label">FORENSIC INTEGRATIONS</p><button data-v="gmail">✉ <span>Gmail forensics</span></button><button data-v="phishguard">◎ <span>PhishGuard</span></button><button data-v="scanners">≡ <span>Scanners</span></button><p class="label">INTELLIGENCE</p><button data-v="intel">◎ <span>Threat intelligence</span></button><button data-v="reports">▤ <span>Reports</span></button><p class="label">PLATFORM</p><button data-v="integrations">⊞ <span>Integrations</span></button><button data-v="settings">⚙ <span>Policy & settings</span></button></nav><div class="sidefoot"><b>● Platform protected</b>Evidence-based multi-layer forensics</div></aside><div><header class="top"><div class="crumb"><b id="crumb">Command center</b> / Security operations</div><div class="profile"><span class="toplive-wrap"><span class="toplive"><span class="soc-dot g pulse"></span> LIVE</span><span class="topstat" id="topposture">posture ...</span><span class="topstat mono" id="topclock">--:--:-- UTC</span></span><input class="search" id="topsearch" placeholder="Search case, IP or domain…" onkeydown="if(event.key==='Enter')doSearch(this.value)"><span id="authchip"></span><div class="avatar">CS</div></div></header><main class="main"><div class="news-ticker" id="newsticker"><span class="news-lbl">LIVE CYBER NEWS</span><div class="news-track" id="newstrack"><span class="news-seq" id="newsseq"></span></div><span class="news-src" id="newssrc">feed…</span></div>
 <section id="unified" class="view">
   <div class="uni-top">
     <div class="uni-title"><h1>Unified Security Workspace</h1><p>Senior analyst console - every security module in one place. Click any module CTA to run a live, evidence-based analysis.</p></div>
