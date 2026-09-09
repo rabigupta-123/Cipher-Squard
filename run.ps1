@@ -8,7 +8,7 @@ $classes = Join-Path $taskRoot 'server\target\classes'
 & (Join-Path $taskRoot 'start-alert-inbox.ps1')
 Write-Host "Compiling Cipher Squad engine..."
 New-Item -ItemType Directory -Force -Path $classes | Out-Null
-javac --add-modules jdk.httpserver -d $classes $source
+javac --add-modules jdk.httpserver -encoding UTF-8 -d $classes $source
 if (-not $?) { Write-Host "Compilation failed."; exit 1 }
 Write-Host "Starting Cipher Squad at http://127.0.0.1:8080 . Press Ctrl+C to stop."
 java --add-modules jdk.httpserver -cp $classes com.sentinelmail.App

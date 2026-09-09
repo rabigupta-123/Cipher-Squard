@@ -1,4 +1,4 @@
-param([switch]$Update)
+﻿param([switch]$Update)
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -16,14 +16,21 @@ $ErrorActionPreference = 'SilentlyContinue'
 # and Rspamd has no Windows build, so no launcher is needed for those.
 
 $projRoot   = $PSScriptRoot
-$clamExe    = 'C:\Program Files\ClamAV\clamd.exe'
-$freshExe   = 'C:\Program Files\ClamAV\freshclam.exe'
+$clamExe    = $null
+foreach ($cand in @("$env:ProgramFiles\ClamAV\clamd.exe", "${env:ProgramFiles(x86)}\ClamAV\clamd.exe", 'C:\Program Files\ClamAV\clamd.exe')) {
+  if (Test-Path -LiteralPath $cand) { $clamExe = $cand; break }
+}
+if (-not $clamExe) {
+  Write-Host "ClamAV not found - install with: winget install Cisco.ClamAV"
+  exit 0
+}
+$freshExe   = Join-Path (Split-Path $clamExe) 'freshclam.exe'
 $dbDir      = Join-Path $projRoot 'clamav-db'
 $cfgDir     = Join-Path $projRoot 'config'
 $clamConf   = Join-Path $cfgDir 'clamd.conf'
 $freshConf  = Join-Path $cfgDir 'freshclam.conf'
 
-if (-not (Test-Path $clamExe)) {
+if (-not (Test-Path -LiteralPath $clamExe)) {
   Write-Host "ClamAV not found at $clamExe - install with: winget install Cisco.ClamAV"
   exit 0
 }
@@ -51,10 +58,27 @@ LogVerbose no
 MaxAttempts 3
 "@ | Set-Content -LiteralPath $freshConf -Encoding ASCII
 
+# Run freshclam with a hard timeout so an unreachable mirror can never hang the launch.
+function Invoke-FreshClam([string]$confPath, [string]$label) {
+  if (-not (Test-Path -LiteralPath $confPath)) { Write-Host "$label : config missing: $confPath"; return 1 }
+  $job = Start-Job -ScriptBlock { param($exe, $cfg) & $exe --config-file="$cfg" } -ArgumentList $freshExe, $confPath
+  if (Wait-Job $job -Timeout 150) {
+    Receive-Job $job
+    $code = $job.State
+    Remove-Job $job -Force
+    Write-Host "$label : freshclam finished (state $code)."
+    return 0
+  }
+  Stop-Job $job -ErrorAction SilentlyContinue
+  Remove-Job $job -Force
+  Write-Host "$label : freshclam timed out after 150 s while talking to the mirror."
+  return 1
+}
+
 # Bootstrap signature database if it is missing.
 if (-not (Test-Path "$dbDir\main.cvd")) {
   Write-Host "No ClamAV signature DB at $dbDir - attempting initial update."
-  & $freshExe --config-file="$freshConf"
+  Invoke-FreshClam $freshConf 'init'
   if (-not (Test-Path "$dbDir\main.cvd")) {
     Write-Host "Signature download failed. Check network, then run:"
     Write-Host "  powershell -ExecutionPolicy Bypass -File `"$PSScriptRoot\start-scanners.ps1`" -Update"
@@ -65,12 +89,12 @@ if (-not (Test-Path "$dbDir\main.cvd")) {
 # Manual signature update requested.
 if ($Update) {
   Write-Host 'Updating ClamAV signatures...'
-  & $freshExe --config-file="$freshConf"
-  exit $LASTEXITCODE
+  Invoke-FreshClam $freshConf 'update'
+  exit 0
 }
 
 # Already listening?
-$listening = Get-NetTCPConnection -LocalPort 3310 -State Listen | Select-Object -First 1
+$listening = Get-NetTCPConnection -LocalPort 3310 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($listening) {
   Write-Host "ClamAV already running on 127.0.0.1:3310 (pid $($listening.OwningProcess))."
   exit 0
@@ -86,7 +110,7 @@ try {
   $listening = $null
   for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 1
-    $listening = Get-NetTCPConnection -LocalPort 3310 -State Listen | Select-Object -First 1
+    $listening = Get-NetTCPConnection -LocalPort 3310 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($listening) { break }
   }
   if ($listening) { Write-Host "ClamAV started on 127.0.0.1:3310 (pid $($listening.OwningProcess))." }

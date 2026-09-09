@@ -5372,7 +5372,36 @@ public final class App {
     return Character.toUpperCase(s.charAt(0)) + s.substring(1);
   }
 
-  private static void staticFile(HttpExchange e) throws IOException { String p=e.getRequestURI().getPath(); if (p.equals("/")) p="/index.html"; Path file=ROOT.resolve(p.substring(1)).normalize(); if (!file.startsWith(ROOT)||!Files.exists(file)||Files.isDirectory(file)){json(e,404,error("Not found"));return;} String type=p.endsWith(".html")?"text/html; charset=utf-8":p.endsWith(".js")?"text/javascript; charset=utf-8":"text/plain; charset=utf-8"; e.getResponseHeaders().set("Content-Type",type); e.getResponseHeaders().set("X-Content-Type-Options","nosniff"); e.getResponseHeaders().set("X-Frame-Options","DENY"); e.getResponseHeaders().set("X-XSS-Protection","1; mode=block"); e.getResponseHeaders().set("Referrer-Policy","strict-origin-when-cross-origin"); e.getResponseHeaders().set("Cache-Control","no-store"); if (p.endsWith(".html")) { e.getResponseHeaders().set("Content-Security-Policy","default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'"); } byte[] bytes=Files.readAllBytes(file);e.sendResponseHeaders(200,bytes.length);try(OutputStream out=e.getResponseBody()){out.write(bytes);} }
+  private static void staticFile(HttpExchange e) throws IOException {
+    String p = e.getRequestURI().getPath();
+    if (p.equals("/")) p = "/index.html";
+    Path file = ROOT.resolve(p.substring(1)).normalize();
+    if (!file.startsWith(ROOT) || !Files.exists(file) || Files.isDirectory(file)) { json(e, 404, error("Not found")); return; }
+    setStaticHeaders(e, p);
+    byte[] bytes = Files.readAllBytes(file);
+    e.sendResponseHeaders(200, bytes.length);
+    try (OutputStream out = e.getResponseBody()) { out.write(bytes); }
+  }
+  // Content-Type + security headers for static assets. Scripts allow 'unsafe-inline'
+  // because the dashboard inlines SVG/CSP-safe markers; no external script sources are trusted.
+  private static void setStaticHeaders(HttpExchange e, String p) {
+    String type = p.endsWith(".html") ? "text/html; charset=utf-8"
+      : p.endsWith(".js") ? "text/javascript; charset=utf-8"
+      : p.endsWith(".css") ? "text/css; charset=utf-8"
+      : p.endsWith(".svg") ? "image/svg+xml"
+      : p.endsWith(".png") ? "image/png"
+      : "text/plain; charset=utf-8";
+    e.getResponseHeaders().set("Content-Type", type);
+    e.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+    e.getResponseHeaders().set("X-Frame-Options", "DENY");
+    e.getResponseHeaders().set("X-XSS-Protection", "1; mode=block");
+    e.getResponseHeaders().set("Referrer-Policy", "strict-origin-when-cross-origin");
+    e.getResponseHeaders().set("Cache-Control", "no-store");
+    if (p.endsWith(".html")) {
+      e.getResponseHeaders().set("Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'");
+    }
+  }
   private static void putHeader(Map<String,List<String>> h,String line){Matcher m=HEADER.matcher(line);if(m.matches())h.computeIfAbsent(m.group(1).toLowerCase(),x->new ArrayList<>()).add(m.group(2));}
   private static String header(Map<String,List<String>> h,String k){return String.join(" | ",h.getOrDefault(k,List.of()));}
   private static String domainOf(String s){
@@ -5638,7 +5667,6 @@ public final class App {
   private static List<String> readLines(Path p){ try { if (!Files.exists(p)) return new ArrayList<>(); return Files.readAllLines(p, StandardCharsets.UTF_8); } catch (Exception e){ return new ArrayList<>(); } }
   private static void appendLine(Path p, String line){ try { Files.createDirectories(DATA); synchronized (App.class) { Files.write(p, (line + "\n").getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND); } } catch (Exception ignored) { } }
   private static void writeLines(Path p, List<String> lines){ try { Files.createDirectories(DATA); synchronized (App.class) { Files.write(p, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING); } } catch (Exception ignored) { } }
-  private static int nextSeq(Path p, String prefix){ int n = readLines(p).size() + 1; return n; }
   private static String iso(){ return Instant.now().toString(); }
 
   // =====================================================================================
@@ -5803,11 +5831,13 @@ public final class App {
     return rem;
   }
   private static void authClear(String acct, String ip){ AUTH_ATTEMPTS.remove("acct:"+acct); AUTH_ATTEMPTS.remove("ip:"+ip); }
-  // Keeps the attempt map bounded (sweep only when it grows large; hard cap otherwise).
+  // Keeps the attempt map bounded: sweep on every call (cheap when small, O(1) amortized).
+  // Entries whose sliding window has expired and whose lock has fired are removed promptly.
   private static void authSweep(long now){
-    if (AUTH_ATTEMPTS.size() < 1000) return;
-    AUTH_ATTEMPTS.entrySet().removeIf(x -> { long[] st = x.getValue(); return st[2] < now && st[1] + AUTH_WINDOW_MS < now; });
-    if (AUTH_ATTEMPTS.size() > 20000) AUTH_ATTEMPTS.clear();
+    AUTH_ATTEMPTS.entrySet().removeIf(x -> {
+      long[] st = x.getValue();
+      return (st[1] + AUTH_WINDOW_MS < now && st[2] < now) || AUTH_ATTEMPTS.size() > 20000;
+    });
   }
   private static void logoutRoute(HttpExchange e) throws IOException {
     if (!"POST".equals(e.getRequestMethod())) { json(e,405,error("POST required")); return; }
@@ -7530,6 +7560,63 @@ public final class App {
     int bandIdx=-1; for (int i=0;i<lvl.length;i++) if (risk>=lvl[i]) { bandIdx=i; break; }
     int tIdx=-1; for (int i=0;i<band.length;i++) if (band[i].equals(chThreshold)) { tIdx=i; break; }
     return tIdx>=0 && bandIdx>=0 && bandIdx<=tIdx;
+  }
+  // ---- package-visible test hooks (auth throttle) ----
+  static void authRecordFailForTest(String email, String ip){ authRecordFailure(email.toLowerCase(Locale.ROOT), ip); }
+  static boolean authIsLockedForTest(String email, String ip){ return authLockRemaining(email.toLowerCase(Locale.ROOT), ip) > 0; }
+  // Mirrors loginRoute: returns the HTTP status code (200/401/429) without creating a session.
+  static int authSimulatedLoginResult(String email, String pass, String ip){
+    String acct = email.trim().toLowerCase(Locale.ROOT);
+    long lockMs = authLockRemaining(acct, ip); if (lockMs > 0) return 429;
+    User u = appUsers().find(acct);
+    boolean ok = false;
+    if (u != null) for (String l : readLines(USERS)) if (strVal(l,"id").equals(u.id)) { ok = verifyPassword(pass, strVal(l,"password_hash")); break; }
+    if (!ok){ if (u != null) authRecordFailure(acct, ip); return 401; }
+    authClear(acct, ip); return 200;
+  }
+  static int authFailCount(String email, String ip){
+    long[] st = AUTH_ATTEMPTS.get("acct:"+email.toLowerCase(Locale.ROOT));
+    return st == null ? 0 : (int) st[0];
+  }
+  static long authLockRemainingMs(String email, String ip){ return authLockRemaining(email.toLowerCase(Locale.ROOT), ip); }
+  static void authClearForTest(String email, String ip){ authClear(email.toLowerCase(Locale.ROOT), ip); }
+  static String channelCreateForTest(String type, String dest, String name, String th){
+    try {
+      String id = "ch-test-" + System.currentTimeMillis();
+      String rec = "{\"id\":\""+q(id)+"\",\"name\":\""+q(name==null?"default":name)+"\",\"type\":\""+q(type==null?"webhook":type.toLowerCase(Locale.ROOT))+"\",\"destination\":\""+q(dest)+"\",\"enabled\":\"true\",\"threshold\":\""+(th==null?"HIGH":th.toUpperCase(Locale.ROOT))+"\",\"config\":\"\",\"created_at\":\""+iso()+"\"}";
+      appendLine(ALERT_CFG, rec);
+      for (String l : readLines(ALERT_CFG)) if (l.contains("\"id\":\""+q(id)+"\"")) return id;
+      return null;
+    } catch (Exception e){ return null; }
+  }
+  static String channelFindForTest(String id){
+    for (String l : readLines(ALERT_CFG)) if (l.contains("\"id\":\""+q(id)+"\"") && l.contains("\"id\":\"ch-")) return l;
+    return null;
+  }
+  static boolean channelDeleteForTest(String id){
+    List<String> out = new ArrayList<>(); boolean any = false;
+    for (String l : readLines(ALERT_CFG)){ if (l.contains("\"id\":\""+q(id)+"\"") && l.contains("\"id\":\"ch-")) { any = true; continue; } out.add(l); }
+    if (any) writeLines(ALERT_CFG, out);
+    return any;
+  }
+  static boolean channelSetEnabledForTest(String id, boolean enabled){
+    String v = enabled ? "true" : "false";
+    List<String> out = new ArrayList<>(); boolean any = false;
+    for (String l : readLines(ALERT_CFG)){
+      if (l.contains("\"id\":\""+q(id)+"\"") && l.contains("\"id\":\"ch-"))
+        { any = true; out.add(l.replaceFirst("\"enabled\":\"[^\"]*\"", "\"enabled\":\""+v+"\"")); continue; }
+      out.add(l);
+    }
+    if (any) writeLines(ALERT_CFG, out);
+    return any;
+  }
+  // ---- package-visible test hooks (static file + analyze) ----
+  static String staticMimeTypeForTest(String p){
+    return p.endsWith(".html") ? "text/html; charset=utf-8" : p.endsWith(".js") ? "text/javascript; charset=utf-8" : p.endsWith(".css") ? "text/css; charset=utf-8" : p.endsWith(".svg") ? "image/svg+xml" : "text/plain; charset=utf-8";
+  }
+  static boolean pathTraversalBlocked(String path){
+    Path file = ROOT.resolve(path.substring(1)).normalize();
+    return !file.startsWith(ROOT) || !Files.exists(file) || Files.isDirectory(file);
   }
 
   /* =====================================================================================

@@ -45,12 +45,29 @@ cannot be talked around. Sessions expire after 8 hours.
 ## Testing
 
 - **Regression suite:** `tests/run-tests.ps1` compiles the engine with the 567-assertion suite and
-  reports `PASS=nnn FAIL=0`. Run it from the repository root:
+  reports `PASS=567 FAIL=0`. Run it from the repository root:
   `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`
+  The suite is deterministic: it sandboxes the data directory (`-Dsentinel.data.dir`) and
+  the YARA rules directory (`YARA_RULES_DIR`) so the count never changes with the live
+  checkout's state.
 - **Accuracy corpus:** labeled phishing / BEC / malware / spam / clean samples are scored against
   the live `/api/analyze` endpoint and the results are checked against risk-band targets
   (BEC payment-diversion and executive-impersonation samples must land HIGH; clean samples must
   stay SAFE).
+- **Live smoke audit:** a scripted harness exercises ~35 API endpoints end-to-end
+  (auth, analysis, forensic toolkit, SOC modules, scanners, platform overview) and records
+  every response code; the full log lives in `smoke.txt`.
+
+## Code quality
+
+- The engine is a single, dependency-free `App.java` (JDK 25 + `jdk.httpserver`). Static
+  asset serving and JSON serialization are factored into small helpers with hardened headers
+  (`X-Content-Type-Options`, `X-Frame-Options`, `CSP`, `Cache-Control: no-store`).
+- Path traversal is impossible for static assets (`!file.startsWith(ROOT)` guard).
+- The auth throttle map is swept on every check so failed-attempt entries never grow
+  unboundedly; `nextSeq` (dead code) was removed.
+- Package-visible test hooks power the 567-assertion suite and let the audit harness verify
+  throttle, channel CRUD, static-file security, and unauthenticated rejection without a browser.
 
 ## What it does
 

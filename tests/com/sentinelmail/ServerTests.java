@@ -56,9 +56,10 @@ public final class ServerTests {
     checksF1ToF5();
     checksGraphAlertAuth();
     gmailForensicsTests();
-    scannerTests();
-    phishGuardTests();
-    System.out.println("\n======================");
+     scannerTests();
+     phishGuardTests();
+     secOpsTests();
+     System.out.println("\n======================");
     System.out.println("PASS=" + pass + "  FAIL=" + fail);
     if (!FAILED.isEmpty()) { System.out.println("FAILED: " + FAILED); System.exit(1); }
     System.out.println("ALL TESTS PASSED");
@@ -1323,6 +1324,47 @@ public final class ServerTests {
     String cred = App.phishGuardAnalyze("https://user@evil.test/login", false);
     check("phishguard: embedded credentials flagged", cred.contains("URL-embedded credentials"));
 
-    check("phishguard: JSON well-formed", countChar(sus,'{')==countChar(sus,'}') && countChar(sus,'[')==countChar(sus,']'));
-  }
+     check("phishguard: JSON well-formed", countChar(sus,'{')==countChar(sus,'}') && countChar(sus,'[')==countChar(sus,']'));
+   }
+
+   // ---- Security operations: auth throttle, channel CRUD, static-file security ----
+   static void secOpsTests() {
+     // ---- Auth: brute-force throttle locks the account after the budget ----
+     String t = "sec-"+System.currentTimeMillis();
+     String email = t+"@example.com"; String ip = "10.0.0." + (t.hashCode() & 0xff);
+     App.authCreateUser(email, "GoodP@ss123", "analyst");
+     App.authClearForTest(email, ip);
+     for (int i = 0; i < 4; i++) App.authRecordFailForTest(email, ip); // 4 failures, below budget
+     check("auth: throttle counts 4 failures (below budget)", App.authFailCount(email,ip) == 4);
+     // The 5th failure must cross the budget and impose a lockout.
+     App.authRecordFailForTest(email, ip);
+     check("auth: 5th failure triggers lockout (>0 ms)", App.authLockRemainingMs(email,ip) > 0);
+     check("auth: account is locked after 5 failures", App.authIsLockedForTest(email,ip));
+     // Lockout must be enforced even for the correct password (simulated login returns 429).
+     check("auth: correct password rejected while locked (429)", App.authSimulatedLoginResult(email, "GoodP@ss123", ip) == 429);
+     // Clearing counters restores the ability to sign in (simulated login returns 200).
+     App.authClearForTest(email, ip);
+     check("auth: clear resets fail counter to 0", App.authFailCount(email,ip) == 0);
+     check("auth: correct password accepted after clear (200)", App.authSimulatedLoginResult(email, "GoodP@ss123", ip) == 200);
+
+     // ---- Channel CRUD: create, find, toggle, delete ----
+     String chId = App.channelCreateForTest("webhook", "http://127.0.0.1:9290/alert/", "sec-test-channel", "HIGH");
+     check("channel: create returns a ch-test id", chId != null && chId.startsWith("ch-test-"));
+     String chRow = App.channelFindForTest(chId);
+     check("channel: find returns the created row", chRow != null && chRow.contains("\"name\":\"sec-test-channel\""));
+     check("channel: toggle enabled off", App.channelSetEnabledForTest(chId, false));
+     String afterOff = App.channelFindForTest(chId);
+     check("channel: enabled flipped to false", afterOff != null && afterOff.contains("\"enabled\":\"false\""));
+     check("channel: toggle enabled on", App.channelSetEnabledForTest(chId, true));
+     check("channel: delete removes the row", App.channelDeleteForTest(chId));
+     check("channel: deleted row is absent", App.channelFindForTest(chId) == null);
+
+     // ---- Static-file serving: extension typing + path-traversal defence ----
+     check("static: html mime", "text/html; charset=utf-8".equals(App.staticMimeTypeForTest("/index.html")));
+     check("static: js mime", "text/javascript; charset=utf-8".equals(App.staticMimeTypeForTest("/app.js")));
+     check("static: svg mime", "image/svg+xml".equals(App.staticMimeTypeForTest("/logo.svg")));
+     // A request for a path outside the document root must not be served.
+     check("static: ../ traversal is blocked", App.pathTraversalBlocked("/../../etc/passwd"));
+     check("static: nonexistent file is blocked", App.pathTraversalBlocked("/does-not-exist.html"));
+   }
 }
