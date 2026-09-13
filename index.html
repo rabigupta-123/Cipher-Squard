@@ -829,6 +829,10 @@ tr:hover,table tr:hover,.case tr:hover{background:#f6f8fb}
 .auth-btn{width:100%;padding:13px;border:0;border-radius:11px;background:linear-gradient(120deg,#ffb02e,#e05d35);color:#211708;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.4px}
 .auth-btn:hover{filter:brightness(1.08)}
 .auth-btn:disabled{opacity:.55;cursor:not-allowed}
+.auth-card .auth-alt{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:12px}
+.auth-card .auth-alt a{color:#ffb02e;text-decoration:none;font-weight:700;cursor:pointer}
+.auth-card .auth-alt a:hover{text-decoration:underline}
+.auth-card .auth-alt .dot{color:#7a6a4d}
 @media(max-width:860px){.auth-land{grid-template-columns:1fr}.auth-left{display:none}.auth-card{margin:10px auto}}
 .gmodal{position:fixed;inset:0;background:rgba(10,14,20,.78);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:950}
 .gmodal.open{display:flex}
@@ -993,7 +997,7 @@ a:hover,.link:hover{text-decoration:underline;text-underline-offset:3px;text-dec
     </div>
   </div>
 </section>
-<section id="dash" class="view active soc"><div class="soc-top"><div class="soc-name"><h1>SECURITY OPERATIONS CENTER</h1><span class="pin">SOLIVE</span></div><div class="soc-clock"><div class="soc-fast"><span class="b"><span class="chk"></span></span>FLASH-SPEED ANALYSIS</div><div class="t" id="socclock_t">--:--:--</div><div class="d" id="socclock_d">----</div><div class="st"><span class="soc-dot g pulse"></span> SYSTEMS ONLINE</div></div></div><div class="soc-ticker"><span class="tk-lbl">ALERT FEED</span><span class="tk" id="socticker">&nbsp;&nbsp;Monitoring email, URL, DNS, SSL/TLS, DDoS, Cloudflare and infrastructure telemetry in real time.</span></div><div class="soc-kpis"><div class="soc-kpi"><div class="k">Emails analyzed&nbsp;<span class="soc-dot g"></span></div><div class="v" id="cnt">0</div><div class="u">this session</div></div><div class="soc-kpi"><div class="k">High-risk / malicious&nbsp;<span class="soc-dot r" id="hazdot"></span></div><div class="v" id="haz">0</div><div class="u" id="hazu">in this session</div></div><div class="soc-kpi"><div class="k">Open cases&nbsp;<span class="soc-dot a"></span></div><div class="v" id="open">0</div><div class="u">investigations</div></div><div class="soc-kpi"><div class="k">Engines online&nbsp;<span class="soc-dot g"></span></div><div class="v" id="eng">0/5</div><div class="u" id="engh">checking…</div></div><div class="soc-kpi"><div class="k">Active IOCs&nbsp;<span class="soc-dot a"></span></div><div class="v" id="soc_ioc">0</div><div class="u">extracted</div></div></div><div class="soc-grid"><div class="soc-panel"><h3>Threat level board&nbsp;<b><span class="soc-dot g pulse"></span>&nbsp;PER MODULE</b></h3><div class="soc-threats" id="threats"></div></div><div class="soc-panel"><h3>Overall posture&nbsp;<b id="postpill">REAL HONEST</b></h3><div class="soc-gaugewrap"><div class="soc-gauge" id="socgauge"><div class="arc"></div><div class="needle" id="socneedle" style="transform:rotate(0deg)"></div><div class="cap"></div></div><div class="soc-gauge2"><div class="tl">Current threat level</div><div class="tv" id="soclvl" style="color:var(--g)">NOMINAL</div><div class="tb" id="soclvlscore">score 0 / 100</div></div><div class="soc-radar" id="socradar"><div class="sweep"></div><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="blip" style="left:70%;top:22%"></div></div></div><div id="socposture" style="margin-top:12px"></div><div class="soc-legend"><span><span class="soc-dot g"></span>READY</span><span><span class="soc-dot a"></span>ATTENTION</span><span><span class="soc-dot r"></span>CRITICAL</span><span><span class="soc-dot" style="background:#5a6370"></span>NOT CONFIGURED</span></div></div></div><div class="soc-grid2"><div class="soc-panel"><h3>Live event stream&nbsp;<b><span class="soc-dot a pulse"></span>&nbsp;SESSION ACTIVITY</b></h3><div class="soc-stream" id="socstream"><div class="soc-empty">No activity yet this session.</div></div></div><div class="soc-panel"><h3>Live detections&nbsp;<b><span class="soc-dot r pulse"></span>&nbsp;EVIDENCE</b></h3><div class="risks has-detections" id="risks" style="padding:0"><div class="meta" style="padding:14px;color:var(--m)">No emails analyzed yet. Run a real analysis to create evidence.</div></div></div></div><div class="soc-grid2"><div class="soc-panel"><h3>Threat volume (demo)&nbsp;<b>ILLUSTRATIVE</b></h3><div style="display:none" id="chart"></div><div class="soc-chart" id="socchart"><i style="height:30%"></i><i style="height:42%"></i><i style="height:36%"></i><i style="height:60%"></i><i style="height:48%"></i><i style="height:74%"></i><i style="height:55%"></i></div><div class="soc-axis"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div><div class="soc-panel"><h3>Security posture&nbsp;<b>HONEST</b></h3><div class="soc-empty" style="padding-top:0">Backends without a live API are reported as not-configured / unknown, never as safe.</div><div id="dashposture" style="margin-top:8px"></div></div></div><div class="soc-grid2"><div class="soc-panel"><h3>Decision envelope&nbsp;<b>ALLOW WARN BLOCK</b></h3><div id="dashenv"><div class="soc-empty">No decision yet this session. Analyze an email to compute a verdict.</div></div></div><div class="soc-panel"><h3>Service status &amp; coverage&nbsp;<b>LIVE</b></h3><div id="status"></div></div></div><div style="display:none" id="dashmods"></div></section>
+<section id="dash" class="view active soc"><div class="soc-top"><div class="soc-name"><h1>SECURITY OPERATIONS CENTER</h1><span class="pin">SOLIVE</span></div><div class="soc-clock"><div class="soc-fast"><span class="b"><span class="chk"></span></span>FLASH-SPEED ANALYSIS</div><div class="t" id="socclock_t">--:--:--</div><div class="d" id="socclock_d">----</div><div class="st"><span class="soc-dot g pulse"></span> SYSTEMS ONLINE</div></div></div><div class="soc-ticker"><span class="tk-lbl">ALERT FEED</span><span class="tk" id="socticker">&nbsp;&nbsp;Monitoring email, URL, DNS, SSL/TLS, DDoS, Cloudflare and infrastructure telemetry in real time.</span></div><div class="soc-kpis"><div class="soc-kpi"><div class="k">Emails analyzed&nbsp;<span class="soc-dot g"></span></div><div class="v" id="cnt">0</div><div class="u">this session</div></div><div class="soc-kpi"><div class="k">High-risk / malicious&nbsp;<span class="soc-dot r" id="hazdot"></span></div><div class="v" id="haz">0</div><div class="u" id="hazu">in this session</div></div><div class="soc-kpi"><div class="k">Open cases&nbsp;<span class="soc-dot a"></span></div><div class="v" id="open">0</div><div class="u">investigations</div></div><div class="soc-kpi"><div class="k">Engines online&nbsp;<span class="soc-dot g"></span></div><div class="v" id="eng">0/5</div><div class="u" id="engh">checking…</div></div><div class="soc-kpi"><div class="k">Active IOCs&nbsp;<span class="soc-dot a"></span></div><div class="v" id="soc_ioc">0</div><div class="u">extracted</div></div></div><div class="soc-grid"><div class="soc-panel"><h3>Threat level board&nbsp;<b><span class="soc-dot g pulse"></span>&nbsp;PER MODULE</b></h3><div class="soc-threats" id="threats"></div></div><div class="soc-panel"><h3>Overall posture&nbsp;<b id="postpill">REAL HONEST</b></h3><div class="soc-gaugewrap"><div class="soc-gauge" id="socgauge"><div class="arc"></div><div class="needle" id="socneedle" style="transform:rotate(0deg)"></div><div class="cap"></div></div><div class="soc-gauge2"><div class="tl">Current threat level</div><div class="tv" id="soclvl" style="color:var(--g)">NOMINAL</div><div class="tb" id="soclvlscore">score 0 / 100</div></div><div class="soc-radar" id="socradar"><div class="sweep"></div><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="blip" style="left:70%;top:22%"></div></div></div><div id="socposture" style="margin-top:12px"></div><div class="soc-legend"><span><span class="soc-dot g"></span>READY</span><span><span class="soc-dot a"></span>ATTENTION</span><span><span class="soc-dot r"></span>CRITICAL</span><span><span class="soc-dot" style="background:#5a6370"></span>NOT CONFIGURED</span></div></div></div><div class="soc-grid2"><div class="soc-panel"><h3>Live event stream&nbsp;<b><span class="soc-dot a pulse"></span>&nbsp;SESSION ACTIVITY</b></h3><div class="soc-stream" id="socstream"><div class="soc-empty">No activity yet this session.</div></div></div><div class="soc-panel"><h3>Live detections&nbsp;<b><span class="soc-dot r pulse"></span>&nbsp;EVIDENCE</b></h3><div class="risks has-detections" id="risks" style="padding:0"><div class="meta" style="padding:14px;color:var(--m)">No emails analyzed yet. Run a real analysis to create evidence.</div></div></div></div><div class="soc-grid2"><div class="soc-panel"><h3>Threat volume (demo)&nbsp;<b>ILLUSTRATIVE</b></h3><div style="display:none" id="chart"></div><div class="soc-chart" id="socchart"><i style="height:30%"></i><i style="height:42%"></i><i style="height:36%"></i><i style="height:60%"></i><i style="height:48%"></i><i style="height:74%"></i><i style="height:55%"></i></div><div class="soc-axis"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div><div class="soc-panel"><h3>Security posture&nbsp;<b>HONEST</b></h3><div class="soc-empty" style="padding-top:0">Backends without a live API are reported as not-configured / unknown, never as safe.</div><div id="dashposture" style="margin-top:8px"></div></div></div><div class="soc-grid2"><div class="soc-panel"><h3>Decision envelope&nbsp;<b>ALLOW WARN BLOCK</b></h3><div id="dashenv"><div class="soc-empty">No decision yet this session. Analyze an email to compute a verdict.</div></div></div><div class="soc-panel"><h3>Service status &amp; coverage&nbsp;<b>LIVE</b></h3><div id="status"></div></div></div><div style="display:none" id="dashmods"></div><div class="soc-grid2"><div class="soc-panel"><h3>Analysis cache &amp; budget&nbsp;<b>LIVE</b></h3><div id="cacheops"><div class="soc-empty">Loading cache telemetry…</div></div><div class="actions" style="margin-top:8px"><button class="secondary" onclick="loadCacheOps()" style="font-size:11px;padding:5px 10px">↻ Refresh</button><button class="secondary" onclick="clearCacheOps()" style="font-size:11px;padding:5px 10px">Clear caches</button></div></div></div></section>
 
 
 
@@ -1028,6 +1032,9 @@ a:hover,.link:hover{text-decoration:underline;text-underline-offset:3px;text-dec
 <div id="fxipresult" class="fx-result"></div>
 <div id="fxfipresult" class="fx-result"></div>
 <div id="fxurlresult" class="fx-result"></div>
+
+<div class="tk-grid"><article class="card tool" style="grid-column:1/-1"><h2>Advanced scan engine <span class="tag">12-PHASE</span></h2><p class="sub">Progressive depth scan: classification, passive recon, active probing, behavioral, fingerprinting, vulnerability, threat-intel, correlation and evidence chain. Budget-aware, SSRF-guarded. Rate: 5 scans per minute.</p><div class="frow"><input id="scantarget" placeholder="IP / hostname / URL / SHA-256 / email"><select id="scantype"><option value="">auto</option><option value="deep">deep</option></select><button class="primary" onclick="runScan()">Run scan</button><button class="secondary" onclick="clearScan()">Clear</button></div><div id="scanoutput" class="result" style="display:none"></div></article></div>
+
 </section>
 
 <section id="cases" class="view"><div class="hero"><div><h1>Investigation cases</h1><p class="sub">High-risk analyses are saved here automatically with auditable status.</p></div><button class="primary" id="newcase">＋ New case</button></div><article class="card"><div class="toolbar"><div><button class="secondary" onclick="go('analyze')">↶ New analysis</button></div></div><table class="case"><thead><tr><th>CASE</th><th>SUBJECT / CAMPAIGN</th><th>RISK</th><th>VERDICT</th><th>STATUS</th><th>UPDATED</th></tr></thead><tbody id="caserows"></tbody></table></article></section>
@@ -1036,8 +1043,8 @@ a:hover,.link:hover{text-decoration:underline;text-underline-offset:3px;text-dec
 
 <section id="reports" class="view"><div class="hero"><div><h1>Forensic reports</h1><p class="sub">Exportable evidence summaries with reproducible integrity records.</p></div><button class="primary" id="newreport">＋ Generate report</button></div><div class="grid"><article class="card"><div class="head"><h2>Recent exports</h2><span class="pill">TAMPER-EVIDENT</span></div><div id="reportrows" class="feed"></div></article><article class="card"><h2>Report pipeline</h2><div class="line"><span>Evidence hash</span><div class="progress"><i style="width:100%"></i></div><b>✓</b></div><div class="line"><span>Weighted score</span><div class="progress"><i style="width:100%"></i></div><b>✓</b></div><div class="line"><span>Explainable verdict</span><div class="progress"><i style="width:100%"></i></div><b>✓</b></div><div class="line"><span>IOC extraction</span><div class="progress"><i style="width:100%"></i></div><b>✓</b></div><div class="line"><span>Geo / routing</span><div class="progress"><i style="width:100%"></i></div><b>✓</b></div><p class="sub" style="font-size:11px">Production deployments should add digital signatures and an access-controlled evidence vault, plus this workspace's case records.</p></article></div></section>
 
-<section id="integrations" class="view"><div class="hero"><div><h1>Integrations & message sources</h1><p class="sub">Multi-channel ingestion into the unified analysis pipeline. Connector status is honest: OAuth connectors show NOT_CONFIGURED until real credentials are provided via server-side environment variables.</p></div><span class="pill">HONEST STATUS</span></div><div class="grid" id="conncards"><div class="meta" style="padding:16px">Loading connector status…</div></div><div class="grid"><article class="card"><div class="head"><h2>Generic Webhook endpoint</h2><span class="pill">LIVE</span></div><p class="sub">POST a raw email or a normalized message to this endpoint. It runs the same unified analysis and policy pipeline as every other source.</p><div class="actions"><button class="secondary" onclick="copyText('http://127.0.0.1:8080/api/ingest')">Copy webhook URL</button></div></article><article class="card"><div class="head"><h2>EML upload</h2><span class="pill">UPLOAD</span></div><p class="sub">Upload a .eml file to analyze it through the standard pipeline (source = eml).</p><input type="file" id="emlfile" accept=".eml">
-<div class="actions"><button class="primary" onclick="uploadEml()">Analyze EML</button></div><div id="emlout" class="result"></div></article></div></section>
+<section id="integrations" class="view"><div class="hero"><div><h1>Integrations & message sources</h1><p class="sub">Multi-channel ingestion into the unified analysis pipeline. Connect a Gmail or Outlook mailbox right here (SMTP + App Password) to send alert emails from it, or set OAuth credentials via server-side environment variables for API-level access. Status is honest — never simulated.</p></div><span class="pill">HONEST STATUS</span></div><div class="grid" id="conncards"><div class="meta" style="padding:16px">Loading connector status…</div></div><div class="grid"><article class="card"><div class="head"><h2>Generic Webhook endpoint</h2><span class="pill">LIVE</span></div><p class="sub">POST a raw email or a normalized message to this endpoint. It runs the same unified analysis and policy pipeline as every other source.</p><div class="actions"><button class="secondary" onclick="copyText('http://127.0.0.1:8080/api/ingest')">Copy webhook URL</button></div></article><article class="card"><div class="head"><h2>EML upload</h2><span class="pill">UPLOAD</span></div><p class="sub">Upload a .eml file to analyze it through the standard pipeline (source = eml).</p><input type="file" id="emlfile" accept=".eml">
+<div class="actions"><button class="primary" onclick="uploadEml()">Analyze EML</button></div><div id="emlout" class="result"></div></article><article class="card"><div class="head"><h2>Connect a mailbox</h2><span class="pill">SMTP RELAY</span></div><p class="sub">Send outbound alert emails from your own Gmail or Outlook inbox. Use an <b>App Password</b> (Google/Microsoft: sign in → Security → 2-Step Verification → App passwords). No cloud project or OAuth app needed for sending. The password is verified live against the provider before it is stored.</p><div class="frow"><label style="display:grid;gap:4px;font-size:11px;color:var(--m);flex:1">PROVIDER<select id="mb_provider" style="padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.25);color:var(--t)"><option value="gmail">Gmail</option><option value="outlook">Outlook / Microsoft 365</option></select></label><label style="display:grid;gap:4px;font-size:11px;color:var(--m);flex:1.4">EMAIL<input id="mb_email" placeholder="you@gmail.com" style="padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.25);color:var(--t)"></label><label style="display:grid;gap:4px;font-size:11px;color:var(--m);flex:1.4">APP PASSWORD<input id="mb_pass" type="password" placeholder="16-character App Password" style="padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.25);color:var(--t)"></label><button class="primary" onclick="connectMailbox()">Connect</button></div><div class="line" style="margin-top:10px"><span>Status</span><b id="mb_status">Checking…</b></div><p class="sub" style="font-size:11px;margin-top:8px;line-height:1.5">Once connected, any <b>Email (SMTP)</b> alert channel without its own SMTP config sends through this mailbox. Credentials are stored in <span class="mono">data/connectors.ndjson</span> (obfuscated, not encrypted — treat it like a secret file). API-level reads (searching your inbox) still require a Google Cloud / Microsoft Entra OAuth app; that path is env-based (<span class="mono">GMAIL_ACCESS_TOKEN</span> / <span class="mono">MS_ACCESS_TOKEN</span>).</p></article></div></section>
 
 <section id="incidents" class="view"><div class="hero"><div><h1>SOC — Incident response</h1><p class="sub">Auto-generated incidents for critical threats, with an auditable lifecycle. Auto-created incidents are persisted server-side (data/incidents.ndjson).</p></div><button class="secondary" onclick="loadIncidents()">↻ Refresh</button></div><div class="stats"><div class="card stat"><div class="sl">Open incidents</div><div class="sv" id="incopen">0</div><span class="up">NEW/TRIAGED/INVESTIGATING</span></div><div class="card stat"><div class="sl">Critical</div><div class="sv" id="inccrit">0</div><span class="up">severity CRITICAL</span></div><div class="card stat"><div class="sl">Closed / resolved</div><div class="sv" id="incclosed">0</div><span class="up">CLOSED/REMEDIATED</span></div></div><article class="card"><table class="case"><thead><tr><th>INCIDENT</th><th>THREAT</th><th>RISK</th><th>SOURCE</th><th>STATUS</th><th>ACTION</th><th></th></tr></thead><tbody id="incrows"><tr><td colspan="7" style="text-align:center;color:var(--m)">No incidents yet. Analyze a critical phishing message to auto-create one.</td></tr></tbody></table></article><div id="incdetail" class="result"></div></section>
 
@@ -1128,12 +1135,38 @@ a:hover,.link:hover{text-decoration:underline;text-underline-offset:3px;text-dec
   <div class="auth-points"><div><i>✓</i> PBKDF2 password hashing with constant-time verification</div><div><i>✓</i> Brute-force throttling and session hardening</div><div><i>✓</i> Full evidence chain-of-custody on every decision</div></div>
   <div class="auth-foot">RESTRICTED OPERATIONS PLATFORM · SESSIONS AUTO-EXPIRE AFTER 8 H</div>
 </div>
-<form class="auth-card" onsubmit="event.preventDefault();doLogin()">
+<form class="auth-card" id="auth_signin" onsubmit="event.preventDefault();doLogin()">
   <div class="a-lc"><b>Secure sign-in</b><span>Restricted platform — authenticate to continue.</span></div>
   <label>EMAIL<input id="lg_email" type="email" autocomplete="username" spellcheck="false" required></label>
   <label>PASSWORD<input id="lg_pass" type="password" autocomplete="current-password" required></label>
   <div id="lg_err" class="auth-err"></div>
   <button class="auth-btn" type="submit">Sign in</button>
+  <div class="auth-alt"><a onclick="showAuth('register')">Create an account</a><span class="dot">·</span><a onclick="showAuth('forgot')">Forgot password?</a></div>
+</form>
+<form class="auth-card" id="auth_register" style="display:none" onsubmit="event.preventDefault();doRegister()">
+  <div class="a-lc"><b>Create an account</b><span>New accounts are read-only (viewer); an admin can promote you later.</span></div>
+  <label>EMAIL<input id="re_email" type="email" autocomplete="username" spellcheck="false" required></label>
+  <label>PASSWORD<input id="re_pass" type="password" autocomplete="new-password" minlength="8" required></label>
+  <label>CONFIRM PASSWORD<input id="re_pass2" type="password" autocomplete="new-password" minlength="8" required></label>
+  <div id="re_err" class="auth-err"></div>
+  <button class="auth-btn" type="submit">Create account</button>
+  <div class="auth-alt"><a onclick="showAuth('signin')">← Back to sign in</a></div>
+</form>
+<form class="auth-card" id="auth_forgot" style="display:none" onsubmit="event.preventDefault();doForgot()">
+  <div class="a-lc"><b>Reset password</b><span>Enter your account email to receive a one-time reset code.</span></div>
+  <label>EMAIL<input id="fp_email" type="email" autocomplete="username" spellcheck="false" required></label>
+  <div id="fp_err" class="auth-err"></div>
+  <button class="auth-btn" type="submit">Send reset code</button>
+  <div class="auth-alt"><a onclick="showAuth('signin')">← Back to sign in</a></div>
+</form>
+<form class="auth-card" id="auth_reset" style="display:none" onsubmit="event.preventDefault();doReset()">
+  <div class="a-lc"><b>Set new password</b><span id="rp_hint">Enter the code and your new password.</span></div>
+  <label>RESET CODE<input id="rp_code" inputmode="latin" autocomplete="one-time-code" spellcheck="false" required></label>
+  <label>NEW PASSWORD<input id="rp_pass" type="password" autocomplete="new-password" minlength="8" required></label>
+  <label>CONFIRM NEW PASSWORD<input id="rp_pass2" type="password" autocomplete="new-password" minlength="8" required></label>
+  <div id="rp_err" class="auth-err"></div>
+  <button class="auth-btn" type="submit">Save new password</button>
+  <div class="auth-alt"><a onclick="showAuth('signin')">← Back to sign in</a></div>
 </form>
 </div></div>
 <div id="graphmodal" class="gmodal"><div class="gmodal-card"><div class="gmodal-head"><h2>◈ Campaign graph</h2><input id="gstart" placeholder="Incident ID (e.g. INC-2026-100326) or node" spellcheck="false" onkeydown="if(event.key==='Enter')loadGraph()"><label style="font-size:12px;color:#8b95a5">HOPS <select id="ghops" style="background:#0a0f16;border:1px solid #2b3542;border-radius:8px;color:#e8edf4;padding:5px 8px"><option>1</option><option selected>2</option><option>3</option></select></label><button class="secondary" onclick="loadGraph()">Render</button><span id="gstats" style="font-size:11px;color:#8b95a5;flex:1"></span><button style="background:transparent;border:none;color:#8b95a5;cursor:pointer;font-size:16px" onclick="closeGraph()">✕</button></div><div id="graphnet"></div></div></div>
@@ -1149,6 +1182,11 @@ function applyAuthChip(){const host=document.getElementById('authchip');if(!host
   const admc=document.getElementById('settings').querySelector('#channelrow');if(admc)admc.style.display=(AUTH.user&&AUTH.user.role==='admin')?'':'none';}
 async function openLogin(){document.getElementById('loginoverlay').classList.add('open');document.getElementById('lg_email').focus()}
 async function doLogin(){const email=document.getElementById('lg_email').value.trim(),pw=document.getElementById('lg_pass').value,err=document.getElementById('lg_err');err.textContent='';if(!email||!pw){err.textContent='Email and password are required';return}try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});const j=await r.json();if(!j.token)throw new Error(j.error||'login failed');AUTH.token=j.token;AUTH.user=j.user;sessionStorage.setItem('cs_token',j.token);document.getElementById('loginoverlay').classList.remove('open');document.getElementById('lg_pass').value='';applyAuthChip();toast('Signed in as '+j.user.email)}catch(x){err.textContent=x.message||'Invalid credentials'}}
+let RESET_EMAIL='';
+function showAuth(m){['signin','register','forgot','reset'].forEach(x=>{const el=document.getElementById('auth_'+x);if(el)el.style.display=(x===m?'':'none')});const f={signin:'lg_email',register:'re_email',forgot:'fp_email',reset:'rp_code'}[m];if(f)setTimeout(()=>document.getElementById(f).focus(),50)}
+async function doRegister(){const email=document.getElementById('re_email').value.trim(),pw=document.getElementById('re_pass').value,pw2=document.getElementById('re_pass2').value,err=document.getElementById('re_err');err.textContent='';if(!email){err.textContent='Email is required';return}if(pw.length<8){err.textContent='Password must be at least 8 characters';return}if(pw!==pw2){err.textContent='Passwords do not match';return}try{const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});const j=await r.json();if(!j.token)throw new Error(j.error||'registration failed');AUTH.token=j.token;AUTH.user=j.user;sessionStorage.setItem('cs_token',j.token);['re_email','re_pass','re_pass2'].forEach(id=>{document.getElementById(id).value=''});document.getElementById('loginoverlay').classList.remove('open');showAuth('signin');applyAuthChip();toast('Account created — signed in as '+j.user.email)}catch(x){err.textContent=x.message||'registration failed'}}
+async function doForgot(){const email=document.getElementById('fp_email').value.trim(),err=document.getElementById('fp_err');err.textContent='';if(!email){err.textContent='Email is required';return}try{const r=await fetch('/api/auth/forgot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const j=await r.json();if(!j.ok)throw new Error(j.error||'request failed');RESET_EMAIL=email;document.getElementById('rp_code').value=j.code||'';document.getElementById('rp_hint').textContent='Code for '+E(email)+' — use it within 30 minutes to set a new password.';showAuth('reset')}catch(x){err.textContent=x.message||'request failed'}}
+async function doReset(){const code=document.getElementById('rp_code').value.trim(),pw=document.getElementById('rp_pass').value,pw2=document.getElementById('rp_pass2').value,err=document.getElementById('rp_err');err.textContent='';if(!code){err.textContent='Reset code is required';return}if(pw.length<8){err.textContent='Password must be at least 8 characters';return}if(pw!==pw2){err.textContent='Passwords do not match';return}try{const r=await fetch('/api/auth/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:RESET_EMAIL,code,password:pw})});const j=await r.json();if(!j.ok)throw new Error(j.error||'reset failed');['rp_code','rp_pass','rp_pass2','fp_email'].forEach(id=>{document.getElementById(id).value=''});showAuth('signin');toast('Password updated — sign in with your new password.')}catch(x){err.textContent=x.message||'reset failed'}}
 function signOut(){AUTH.token='';AUTH.user=null;sessionStorage.removeItem('cs_token');applyAuthChip();document.getElementById('loginoverlay').classList.add('open');toast('Signed out')}
 const _authFetch=window.fetch.bind(window);
 window.fetch=(url,opts)=>{
@@ -1493,7 +1531,7 @@ function renderIpIntel(d){
   <div class="fxcard"><h2>THREAT INTELLIGENCE <span class="tag">FINDINGS</span></h2>
     ${(d.findings||[]).map(f=>`<div class="finding"><b>◆</b> ${E(f)}</div>`).join('')||'<div class="finding">No significant infrastructure findings.</div>'}
     <div class="smalllabel" style="margin-top:12px">Abuse / reputation<small> (server-side feed)</small></div>
-    <div class="fk"><span class="k">Reputation source</span><span class="v">${d.abuseReputation? (d.abuseReputation.error||d.abuseReputation.source) : 'Source unavailable'}</span></div>
+    <div class="fk"><span class="k">Reputation source</span><span class="v">${E(d.abuseReputation? (d.abuseReputation.error||d.abuseReputation.source) : 'Source unavailable')}</span></div>
     ${d.abuseReputation&&!d.abuseReputation.error?`<div class="fk"><span class="k">Abuse confidence</span><span class="v" style="color:${+d.abuseReputation.abuseConfidenceScore>=50?'var(--r)':'var(--i)'}">${d.abuseReputation.abuseConfidenceScore}%</span></div>
     <div class="fk"><span class="k">Usage / reports</span><span class="v">${E(d.abuseReputation.usageType||'—')} · reports=${d.abuseReputation.totalReports} · whitelisted=${d.abuseReputation.isWhitelisted?'yes':'no'}</span></div>`:''}
     <div class="smalllabel" style="margin-top:12px">Anonymity / proxy / Tor indicators</div>
@@ -1660,7 +1698,7 @@ function renderUrlAnalyze(d){
     <div class="fx-kv">
       ${d.dnsFirewall?`<div class="fk"><span class="k">DNS failure (FIX 1)</span><span class="v">${d.dnsFirewall.failed?'<span class="badge bbad">DNS FAILED — suspicious (+5)</span>':'<span class="badge bgood">DNS resolves</span>'}<span style="color:var(--m)">${E(d.dnsFirewall.note||'')}</span></span></div>`:''}
       ${d.domainAgeDays!=null?`<div class="fk"><span class="k">Domain age (FIX 2)</span><span class="v">${d.domainAgeDays>=0?d.domainAgeDays+' days'+(d.domainAgeDays<7?' <span class="badge bbad">CRITICAL &lt;7d</span>':d.domainAgeDays<30?' <span class="badge bwarn">young &lt;30d</span>':''):'<span style="color:var(--m)">UNKNOWN (+8 suspicious, not clean)</span>'} ${d.whoisFallback&&d.whoisFallback.source?`<span style="color:var(--m)">· ${E(d.whoisFallback.source)}</span>`:''}</span></div>`:''}
-      ${d.jwtToken?`<div class="fk"><span class="k" style="align-self:start">JWT token (ADD 1) <span class="badge ${(d.jwtToken.detected)?'bbad':'bgood'}">${d.jwtToken.detected?'detected':'none'}</span></span><span class="v" style="white-space:pre-wrap">${(d.jwtToken.detected)?(d.jwtToken.algorithm_none_attack?'<b>alg:none — CRITICAL (forgeable)</b>':'<b>alg: '+(d.jwtToken.header&&d.jwtToken.header.alg||'?')+'</b>')+'<br>parameter: '+E(d.jwtToken.parameter||'—')+(d.jwtToken.targeted_victim?`<br>targeted victim: <span style="color:var(--a)">${E(d.jwtToken.targeted_victim)}</span>`:'')+(d.jwtToken.capture_intent_confirmed?`<br><span class="badge bbad">CAPTURE INTENT (T1056.003)</span>`:''):'No JWT present.'}</span></div>`:''}
+      ${d.jwtToken?`<div class="fk"><span class="k" style="align-self:start">JWT token (ADD 1) <span class="badge ${(d.jwtToken.detected)?'bbad':'bgood'}">${d.jwtToken.detected?'detected':'none'}</span></span><span class="v" style="white-space:pre-wrap">${(d.jwtToken.detected)?(d.jwtToken.algorithm_none_attack?'<b>alg:none — CRITICAL (forgeable)</b>':'<b>alg: '+(d.jwtToken.header&&d.jwtToken.header.alg||'?')+'</b>')+'<br>parameter: '+E(d.jwtToken.parameter||'—')+(d.jwtToken.signature_present_bool!=null?`<br>signature: <b>${d.jwtToken.signature_present_bool?'present':'missing'}</b>`:'')+(d.jwtToken.token_forgeable?`<br><span class="badge bbad">FORGEABLE TOKEN (alg:none / empty signature)</span>`:'')+(d.jwtToken.targeted_victim?`<br>targeted victim: <span style="color:var(--a)">${E(d.jwtToken.targeted_victim)}</span>`:'')+(d.jwtToken.capture_intent_confirmed?`<br><span class="badge bbad">CAPTURE INTENT (T1056.003)</span>`:''):'No JWT present.'}</span></div>`:''}
       ${d.brandImpersonation?`<div class="fk"><span class="k" style="align-self:start">Brand impersonation (ADD 2)</span><span class="v">${d.brandImpersonation.detected?'<span class="badge bbad">BRAND IMPERSONATION</span> <b>'+E(d.brandImpersonation.brand)+'</b> '+E(d.brandImpersonation.confidence||'')+(d.brandImpersonation.technique?'<br>technique: '+E(d.brandImpersonation.technique):'')+(d.brandImpersonation.impersonated_host?`<br>impersonates: <span style="color:var(--a)">${E(d.brandImpersonation.impersonated_host)}</span>`:'')+'<br><span style="color:var(--m)">'+E(d.brandImpersonation.description||'')+'</span>':'<span class="badge bgood">no brand squat detected</span>'}</span></div>`:''}
       ${d.threatFeeds&&d.threatFeeds.feeds?`<div class="fk"><span class="k" style="align-self:start">Threat feeds (ADD 9)</span><span class="v">${d.threatFeeds.feeds.map(f=>`<span class="sbad ${f.status==='MALICIOUS'?'sbad-r':f.status==='CLEAN'?'sbad-g':'sbad-b'}">${E(f.name)}:${E(f.status)}</span>`).join(' ')}<div style="margin-top:4px;color:var(--m)">${E(d.threatFeeds.note||'')}</div></span></div>`:''}
       ${d.socialEngineering?`<div class="fk"><span class="k" style="align-self:start">Social-engineering signals</span><span class="v" style="white-space:pre-wrap">${(d.socialEngineering.urgency||d.socialEngineering.credentialFocus)?((d.socialEngineering.urgency?'[urgency] ':'')+(d.socialEngineering.credentialFocus?'[credential focus] ':'')+(d.socialEngineering.impersonation?'[impersonation] ':'')+'<span style="color:var(--m)">'+E(d.socialEngineering.prototype||'')+'</span>'):'No explicit coercion prototype detected.'}</span></div>`:''}
@@ -1729,18 +1767,88 @@ function renderDecision(d){
 async function loadConnectors(){
   try{
     const r=await fetch('/api/connectors');const d=await r.json();
-    $('conncards').innerHTML=(d.connectors||[]).map(c=>{
+    const mb=d.connectors||[];
+    const gm=mb.find(c=>c.id==='gmail'),ol=mb.find(c=>c.id==='outlook');
+    const mbBox=document.getElementById('mb_status');
+    if(mbBox){
+      const act=[gm,ol].filter(Boolean).filter(c=>c.status==='CONNECTED');
+      mbBox.textContent=act.length?act.map(c=>`${c.name} · ${c.email}`).join(' · '):'Not connected';
+    }
+    $('conncards').innerHTML=mb.map(c=>{
       const ok=c.status==='CONNECTED';
       const cls=ok?'g':(c.status==='NOT_CONFIGURED'?'b':'a');
+      const isMail=c.id==='gmail'||c.id==='outlook';
+      const uid='conn_'+c.id;
+      let extra='';
+      if(isMail&&!ok)extra=`<div class="frow" style="margin-top:10px"><input id="${uid}_mail" placeholder="you@gmail.com" style="flex:1;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.25);color:var(--t)"><input id="${uid}_pass" type="password" placeholder="App Password" style="flex:1;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.25);color:var(--t)"></div><div class="actions" style="margin-top:8px"><button class="primary" onclick="connectMailbox('${uid}',event)">Connect ${E(c.family==='gmail'?'Gmail':'Outlook')}</button></div>`;
+      if(isMail&&ok)extra=`<div class="line"><span>Mailbox</span><b>${E(c.email||'')}</b></div><div class="line"><span>Relay</span><b class="mono">${E(c.relay||'')}</b></div><div class="actions" style="margin-top:8px"><button class="secondary" onclick="disconnectMailbox('${E(c.id)}')">Disconnect</button></div>`;
       return `<article class="card conn"><div class="head"><h2>${E(c.name)}</h2><span class="sbad sbad-${cls}">${E(c.status)}</span></div>
       <div class="line"><span>Family</span><b class="mono">${E(c.family)}</b></div>
       <div class="line"><span>Permissions</span><b>${E(c.permissionStatus)}</b></div>
       <div class="line"><span>Scopes</span><b>${E(c.scopes||'—')}</b></div>
-      ${c.status==='NOT_CONFIGURED'?`<div class="line"><span>Status</span><b>${E('Integration not configured.')}</b></div>`:''}
-      ${c.status==='NOT_CONFIGURED'?`<button class="secondary" onclick="toast('Configure via server-side environment variables (OAuth client id + access token). Not faked.')">Configure</button>`:`<button class="primary" onclick="toast('Reconnect is a real 3rd-party OAuth flow — configure credentials first.')">Reconnect</button>`}
+      <div class="actions" style="margin-top:8px"><button class="secondary" onclick="testConnector('${c.id}',this)">Test connectivity</button></div>
+      <div id="ct_${c.id}" class="result" style="display:none"></div>
+      ${extra}
       </article>`;
     }).join('')||'<div class="meta" style="padding:16px">No connectors.</div>';
   }catch(e){$('conncards').innerHTML='<div class="meta" style="padding:16px">Connector status unavailable.</div>'}
+}
+async function connectMailbox(uid, ev){
+  const provider=uid?uid.replace('conn_',''):document.getElementById('mb_provider').value;
+  const email=(uid?document.getElementById(uid+'_mail').value:document.getElementById('mb_email').value).trim();
+  const password=uid?document.getElementById(uid+'_pass').value:document.getElementById('mb_pass').value;
+  if(!email)return toast('Enter the mailbox email address');
+  if(!password)return toast('Enter the App Password for that mailbox');
+  const btn=(ev&&ev.target)?ev.target:null;if(btn){btn.disabled=true;btn.textContent='Verifying…'}
+  try{
+    const r=await fetch('/api/connectors/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider,email,password})});
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.error||'connection failed');
+    toast(`Connected ${email} — alerts can now be sent via ${provider}`);
+    if(!uid){document.getElementById('mb_email').value='';document.getElementById('mb_pass').value=''}
+    loadConnectors();
+  }catch(e){toast('Connect failed: '+e.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Connect'}}
+}
+async function disconnectMailbox(provider){
+  try{
+    const r=await fetch('/api/connectors/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error||'failed');
+    toast('Disconnected '+provider);loadConnectors();
+  }catch(e){toast('Disconnect failed: '+e.message)}
+}
+async function testConnector(id,btn){
+  if(btn){btn.disabled=true;btn.textContent='Testing…'}
+  const box=document.getElementById('ct_'+id);
+  if(box){box.style.display='block';box.innerHTML='<div class="meta" style="padding:6px;color:var(--m)">Running live connectivity check…</div>'}
+  try{
+    const j=await postJson('/api/connectors/test',{provider:id});
+    const rows=j.results||[];
+    if(box){box.innerHTML=rows.map(r=>`<div class="line" style="margin:4px 0"><span>${E(r.id)}</span><b style="color:${r.reachable?'var(--g)':'var(--m)'}">${E(r.status)}${r.reachable?(' · reached '+r.latency_ms+'ms'):' · not configured'}</b></div>`).join('')}
+    toast('Tested '+rows.length+' connector(s)');
+  }catch(e){
+    if(box)box.innerHTML='<div class="errbox">'+E(e.message)+'</div>';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Test connectivity'}
+  }
+}
+async function loadCacheOps(){
+  const t=document.getElementById('cacheops');
+  t.innerHTML='<div class="soc-empty">Loading cache telemetry…</div>';
+  try{
+    const d=await (await fetch('/api/cache/status')).json();
+    const b=d.budget_exceeded?'<span class="sbad sbad-r">BREACHED</span>':'<span class="sbad sbad-g">within</span>';
+    t.innerHTML=`<div class="line"><span>IP reputation cache</span><b>${d.ip_cache_entries} entries</b></div><div class="line"><span>DNS resolve cache</span><b>${d.dns_cache_entries} entries</b></div><div class="line"><span>RDAP / WHOIS cache</span><b>${d.rdap_cache_entries} entries</b></div><div class="line"><span>DoH cache</span><b>${d.doh_cache_entries} entries</b></div><div class="line"><span>Cache TTL</span><b>${d.ttl_ms} ms</b></div><div class="line"><span>Analysis budget</span><b>${d.budget_ms} ms ${b}</b></div>`;
+  }catch(e){t.innerHTML='<div class="errbox">Cache telemetry unavailable: '+E(e.message)+'</div>'}
+}
+async function clearCacheOps(){
+  const t=document.getElementById('cacheops');
+  t.innerHTML='<div class="soc-empty">Clearing…</div>';
+  try{
+    const j=await postJson('/api/cache/clear');
+    toast('Cleared '+j.entries_cleared+' cache entries');
+    loadCacheOps();
+  }catch(e){toast('Clear failed: '+e.message);loadCacheOps()}
 }
 async function uploadEml(){
   const f=$('emlfile').files[0];if(!f)return toast('Choose a .eml file first');
@@ -2250,6 +2358,47 @@ async function runScannerScan(){
   finally{b.disabled=false;b.textContent='Run scanners'}
 }
 (function(){const g=$('grun');if(g)g.onclick=runGmailFx;const pg=$('pgrun');if(pg)pg.onclick=runPhishGuard;const sc=$('scrun');if(sc)sc.onclick=runScannerScan;})();
+
+/* ---- advanced scan engine UI ---- */
+const SCAN_PHASES=[['S1','Target classification'],['S2','Passive reconnaissance'],['S3','Active probing'],['S4','Behavioral patterns'],['S5','Fingerprinting'],['S6','Vulnerability analysis'],['S7','Threat intelligence'],['S8','Correlation & verdict']];
+async function initScanTypes(){
+  const sel=$('scantype');if(!sel)return;
+  try{const d=await apiFetch('/api/scan/templates',{method:'GET'},10000);
+    (d&&d.templates||[]).forEach(t=>{let has=false;for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===t){has=true;break}}if(!has){const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o)}});
+  }catch(_){}
+}
+function clearScan(){const t=$('scantarget');if(t)t.value='';const out=$('scanoutput');if(out){out.innerHTML='';out.style.display='none'}}
+async function runScan(){
+  const tgt=$('scantarget').value.trim();if(!tgt)return toast('Enter a scan target');
+  const st=$('scantype').value;
+  const out=$('scanoutput');out.style.display='block';
+  out.innerHTML='<div class="smalllabel" style="color:var(--c)">Progressive depth scan in progress &mdash; unresponsive phases are dropped at the budget deadline (8.4s) &hellip;</div>'+SCAN_PHASES.map((p,i)=>'<div class="sfrable" id="sf'+(i+1)+'">'+p[0]+' &middot; '+p[1]+'</div>').join('');
+  let d=null;
+  try{
+    d=await apiFetch('/api/scan/deep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:tgt,scan_type:st})},85000);
+  }catch(e){out.innerHTML='<div class="errbox" style="display:block">Scan error: '+E(e.message)+'</div>';return}
+  const done=d&&d.phase_results?Object.keys(d.phase_results).length:0;
+  SCAN_PHASES.forEach((p,i)=>{const el=$('sf'+(i+1));if(el&&i<Math.min(done,8)){el.classList.add('sfdone');el.innerHTML=p[0]+' &middot; '+p[1]+' <span style="color:var(--g)">&#10003;</span>'}});
+  setTimeout(()=>scanRender(d),220);
+}
+function scanRender(d){
+  const out=$('scanoutput');out.innerHTML='';
+  const risk=(d&&d.risk_score!=null?d.risk_score:0);
+  const col=severityColor(risk);
+  let h='<div class="fxcard"><h2>ADVANCED SCAN ENGINE <span class="tag">RESULT</span></h2><div class="fx-ov"><div class="fx-ring" style="'+fxRing(risk)+'"><span>'+risk+'</span></div><div class="fx-score"><b style="color:'+col+'">'+E(d&&d.verdict||'UNKNOWN')+'</b><p>'+E(d&&d.human_report||'')+'</p><div class="fx-meta"><div class="rv"><b>TARGET</b><span>'+E(d&&d.target||'—')+'</span></div><div class="rv"><b>TYPE</b><span>'+E(d&&d.target_type||'—')+'</span></div><div class="rv"><b>THREAT LEVEL</b><span>'+E(d&&d.threat_level||'—')+'</span></div><div class="rv"><b>BUDGET EXCEEDED</b><span>'+(d&&d.budget_exceeded?'yes':'no')+'</span></div><div class="rv"><b>CACHED</b><span>'+(d&&d.cached?'yes':'no')+'</span></div><div class="rv"><b>DURATION</b><span>'+E(d&&d.elapsed_ms||'—')+' ms</span></div><div class="rv"><b>ENGINE / TOOL</b><span>'+E(d&&d.engine_version||'—')+' <span style="color:var(--m)">'+E(d&&d.tool_version||'')+'</span></span></div><div class="rv"><b>SCAN ID</b><span class="mono">'+E(d&&d.scan_id||'—')+'</span></div></div></div></div></div>';
+  const ph=d&&d.phase_results||{};
+  const names=Object.keys(ph);
+  if(names.length){h+='<div class="fxcard"><h2>PHASES <span class="tag">S1&ndash;S12</span></h2>'+names.map((k,i)=>{const sub=apexValHtml(ph[k]);return '<div class="fx-ind"><div class="row"><span class="dot"></span><span><b>S'+(i+1)+' &middot; '+E(k.replace(/^\d+_/,'').replace(/_/g,' ').toUpperCase())+'</b><br><span style="color:var(--m);font-size:11px">'+sub+'</span></span></div></div>'}).join('')+'</div>'}
+  if(d&&d.risk_breakdown){h+='<div class="fxcard"><h2>RISK BREAKDOWN <span class="tag">SCORING</span></h2>'+apexValHtml(d.risk_breakdown)+'</div>'}
+  if(d&&d.mitre_attack){const ma=(d.mitre_attack||[]);h+='<div class="fxcard"><h2>MITRE ATT&amp;CK <span class="tag">MAPPINGS</span></h2>'+(ma.length?ma.map(m=>'<div class="fx-ind"><div class="row"><span class="dot"></span><span><b>'+E(m.tactic||'')+' &middot; '+E(m.technique||m.id||'')+'</b><br><span style="color:var(--m);font-size:11px">'+E(m.reference_url||'')+'</span></span></div></div>').join(''):'<div class="fx-interp"><b>None correlated.</b></div>')+'</div>'}
+  if(d&&d.findings&&d.findings.length){h+='<div class="fxcard"><h2>FINDINGS <span class="tag">'+(d.findings.length)+'</span></h2>'+d.findings.map(f=>'<div class="finding"><b>&#9670;</b> '+(f.code?E(f.code)+' &middot; ':'')+E(f.message)+'</div>').join('')+'</div>'}
+  if(d&&d.recommendations&&d.recommendations.length){h+='<div class="fxcard"><h2>RECOMMENDED ACTIONS <span class="tag">F-CODES</span></h2>'+d.recommendations.map((r,i)=>'<div class="finding"><b>'+(i+1)+'.</b> '+(r.code?E(r.code)+' — ':'')+E(r.action||r.message)+'</div>').join('')+'</div>'}
+  if(d&&d.evidence_chain){h+='<div class="fxcard"><h2>EVIDENCE CHAIN <span class="tag">APEX</span></h2>'+apexValHtml(d.evidence_chain)+'</div>'}
+  if(d&&d.iocs&&Object.keys(d.iocs).length){h+='<div class="fxcard"><h2>IOCs <span class="tag">EXTRACTED</span></h2>'+apexValHtml(d.iocs)+'</div>'}
+  h+='<p class="sub" style="font-size:11px;margin-top:8px">Deep scans are budget-aware (hard 8.4s deadline) and SSRF-guarded: probes run only against public, non-bogon targets. Any external lookup that fails is reported <b>UNAVAILABLE</b> — never assumed clean.</p>';
+  out.innerHTML=h;
+}
+initScanTypes();
 
 </script>
 </body></html>

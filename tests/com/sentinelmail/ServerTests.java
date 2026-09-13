@@ -52,6 +52,7 @@ public final class ServerTests {
     syntheticPhishingTests();
     masterFixTests();
     apexLayerTests();
+    specTenTests();
     apexGeoForensicsTests();
     checksF1ToF5();
     checksGraphAlertAuth();
@@ -59,6 +60,7 @@ public final class ServerTests {
      scannerTests();
      phishGuardTests();
      secOpsTests();
+     scanEngineTests();
      System.out.println("\n======================");
     System.out.println("PASS=" + pass + "  FAIL=" + fail);
     if (!FAILED.isEmpty()) { System.out.println("FAILED: " + FAILED); System.exit(1); }
@@ -1060,6 +1062,103 @@ public final class ServerTests {
   }
 
   // =====================================================================
+  // SPEC-STEP-10: field-level schema regression tests
+  // Validates the spec key deltas implemented in Steps 1/2/3: nested
+  // confidence axes, 7-group completeness breakdown, JWT forensics keys,
+  // subject/behavioral/x-mailer/domain-intel/greeting/timing additions,
+  // and the spec-shaped MITRE ATT&CK entry keys.
+  // =====================================================================
+  static void specTenTests() {
+    String jwtH2 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("{\"alg\":\"none\",\"typ\":\"JWT\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    String jwtP2 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("{\"email\":\"victim@example.com\",\"action\":\"capture\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    String token2 = jwtH2 + "." + jwtP2 + ".";
+    String eml2 =
+      "From: Microsoft Security [security@login-micr0soft.example]\r\n" +
+      "To: employee@example.com\r\n" +
+      "Subject: =?UTF-8?Q?URGENT:_Your_Microsoft_account_will_be_suspended_today?=\r\n" +
+      "Date: Sat, 29 Aug 2026 02:15:00 +0000\r\n" +
+      "\r\n" +
+      "Dear User,\r\n" +
+      "We detected unusual activity. Verify your account immediately: https://login-micr0soft.example/verify?jwt=" + token2 + "\r\n" +
+      "Call 1-800-555-0199 for help.\r\n";
+    String j2 = App.analyzeMessageForTests(eml2);
+
+    // Step 1D: completeness breakdown — 7 named groups
+    check("spec10: completeness_breakdown emitted", j2.contains("\"completeness_breakdown\":{\"header_fields\":"));
+    check("spec10: breakdown has authentication group", j2.contains("\"authentication\":{\"available\":"));
+    check("spec10: breakdown has apex_layers group", j2.contains("\"apex_layers\":{\"available\":"));
+    check("spec10: breakdown has domain_intel group", j2.contains("\"domain_intel\":{\"available\":"));
+    check("spec10: completeness keeps deferred_by_structure", j2.contains("\"deferred_by_structure\":[\""));
+
+    // Step 1B: confidence breakdown — nested {score,basis} axes + combined
+    check("spec10: confidence structural nested score+basis", j2.contains("\"structural\":{\"score\":") && j2.contains(",\"basis\":\""));
+    check("spec10: confidence behavioral axis present", j2.contains("\"behavioral\":{\"score\":"));
+    check("spec10: confidence reputation axis present", j2.contains("\"reputation\":{\"score\":"));
+    check("spec10: confidence combined field", j2.contains("\"combined\":"));
+
+    // Step 2A: JWT forensics spec keys
+    check("spec10: jwt location key", j2.contains("\"location\":\"url_parameter\""));
+    check("spec10: jwt parameter key", j2.contains("\"parameter\":\"jwt\""));
+    check("spec10: jwt header_decoded object", j2.contains("\"header_decoded\":{\"typ\":\"JWT\",\"alg\":\"none\"}"));
+    check("spec10: jwt payload_decoded object", j2.contains("\"payload_decoded\":{\"email\":\"victim@example.com\""));
+    check("spec10: jwt signature_present_bool", j2.contains("\"signature_present_bool\":false"));
+    check("spec10: jwt algorithm_none_attack", j2.contains("\"algorithm_none_attack\":true"));
+    check("spec10: jwt targeted_victim", j2.contains("\"targeted_victim\":\"victim@example.com\""));
+    check("spec10: jwt capture_intent_confirmed", j2.contains("\"capture_intent_confirmed\":true"));
+    check("spec10: jwt token_forgeable", j2.contains("\"token_forgeable\":true"));
+
+    // Step 2B: subject forensics spec keys
+    check("spec10: subject encoding_format", j2.contains("\"encoding_format\":\"=?UTF-8?Q?"));
+    check("spec10: subject obfuscated boolean", j2.contains("\"obfuscated\":"));
+    check("spec10: subject all_caps_words array", j2.contains("\"all_caps_words\":["));
+
+    // Step 2C: behavioral analysis spec keys
+    check("spec10: behavioral send_hour_utc", j2.contains("\"send_hour_utc\":2"));
+    check("spec10: behavioral time_classification", j2.contains("\"time_classification\":\"OFF-HOURS\""));
+    check("spec10: behavioral suspicious_timing", j2.contains("\"suspicious_timing\":true"));
+    check("spec10: behavioral weekend_send", j2.contains("\"weekend_send\":true"));
+    check("spec10: behavioral greeting_type", j2.contains("\"greeting_type\":\"GENERIC\""));
+    check("spec10: behavioral campaign_type", j2.contains("\"campaign_type\":\"MASS_PHISHING\""));
+    String per2 = "From: boss@corp.example\r\nTo: alice@corp.example\r\nSubject: Re: review\r\nDate: Thu, 27 Aug 2026 11:00:00 +0000\r\n\r\nDear Alice, please review the report before noon.\r\n";
+    String pj2 = App.analyzeMessageForTests(per2);
+    check("spec10: behavioral name_matches_recipient", pj2.contains("\"name_matches_recipient\":true"));
+    check("spec10: behavioral personalized greeting_type", pj2.contains("\"greeting_type\":\"PERSONALIZED\""));
+    check("spec10: behavioral spearphishing campaign_type", pj2.contains("\"campaign_type\":\"SPEARPHISHING\""));
+
+    // Step 2D: X-Mailer extraction spec keys
+    String xeml2 = "From: a@evil.example\r\nTo: v@example.com\r\nSubject: s\r\nDate: Thu, 27 Aug 2026 12:00:00 +0000\r\nX-Mailer: Apple iPhone Mail/17.0\r\n\r\nhello\r\n";
+    String xj2 = App.analyzeMessageForTests(xeml2);
+    check("spec10: x-mailer extractions complete_mailer", xj2.contains("\"extractions\":[{\"complete_mailer\":\"Apple iPhone Mail/17.0\""));
+    check("spec10: x-mailer extraction type ua_string", xj2.contains("\"type\":\"ua_string\""));
+    check("spec10: x-mailer ua_risk numeric", xj2.contains("\"ua_risk\":5"));
+
+    // Step 2E: domain intelligence spec keys
+    check("spec10: domain_intel whois_api", j2.contains("\"whois_api\":\"unavailable\""));
+    check("spec10: domain_intel registrar present", j2.contains("\"registrar\":\"UNKNOWN\""));
+    check("spec10: domain_intel recent_registration_match", j2.contains("\"recent_registration_match\":false"));
+    check("spec10: domain_intel source_evidence", j2.contains("\"source_evidence\":"));
+
+    // Step 2F/2G/2H: greeting / timing / fake-contact spec keys
+    check("spec10: greeting name key", pj2.contains("\"name\":\"Alice\""));
+    check("spec10: greeting email_encoding_type", pj2.contains("\"email_encoding_type\":\"UTF-8\""));
+    check("spec10: timing utc_send_time", j2.contains("\"utc_send_time\":"));
+    check("spec10: timing business_hours false off-hours", j2.contains("\"business_hours\":false"));
+    check("spec10: fake-contact phone_count", j2.contains("\"phone_count\":1"));
+
+    // Step 3: MITRE ATT&CK spec-shaped entries (technique_id/name/sub/reference/source)
+    check("spec10: mitre technique_id T1566", j2.contains("\"technique_id\":\"T1566\""));
+    check("spec10: mitre technique_name Phishing", j2.contains("\"technique_name\":\"Phishing\""));
+    check("spec10: mitre sub_technique_id 002", j2.contains("\"sub_technique_id\":\"002\""));
+    check("spec10: mitre sub_technique_name", j2.contains("\"sub_technique_name\":\"Spearphishing Link\""));
+    check("spec10: mitre reference_url", j2.contains("\"reference_url\":\"https://attack.mitre.org/techniques/T1566/002/\""));
+    check("spec10: mitre source field", j2.contains("\"source\":\"evidence_matrix\""));
+    // Step 9B: URL length cap (2048) — overlong URLs are rejected, never truncated into analysis
+    StringBuilder longUrl = new StringBuilder("https://evil.example/"); for (int i = 0; i < 2100; i++) longUrl.append('x');
+    check("spec10: url over 2048 chars rejected by normalizeUrl", App.normalizeUrl(longUrl.toString()) == null);
+    check("spec10: url at 2048 cap still normalizes", App.normalizeUrl("https://evil.example/" + "y".repeat(2000)).startsWith("https://evil.example/"));
+  }
+
+  // =====================================================================
   // APEX-GEO 16-layer IP forensics regression tests
   // Uses only private/reserved addresses (deterministic — no live network)
   // plus pure deterministic representation helpers. Verifies honest
@@ -1366,5 +1465,141 @@ public final class ServerTests {
      // A request for a path outside the document root must not be served.
      check("static: ../ traversal is blocked", App.pathTraversalBlocked("/../../etc/passwd"));
      check("static: nonexistent file is blocked", App.pathTraversalBlocked("/does-not-exist.html"));
+   }
+
+   // ---- Advanced Scan Engine (APEX-SCAN-2.0) ----
+   static void scanEngineTests() {
+     // Target pre-classification (pure)
+     checkEq("scan: type IPv4", App.scanTypeTest("8.8.8.8"), "IPV4");
+     checkEq("scan: type IPv6", App.scanTypeTest("2001:db8::1"), "IPV6");
+     checkEq("scan: type domain", App.scanTypeTest("evil-example.com"), "DOMAIN");
+     checkEq("scan: type url", App.scanTypeTest("https://evil.test/verify"), "URL");
+     checkEq("scan: type email", App.scanTypeTest("admin@evil.example"), "EMAIL");
+     checkEq("scan: type sha256", App.scanTypeTest("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "SHA256");
+     checkEq("scan: type unclassified", App.scanTypeTest("   "), "UNCLASSIFIED");
+
+     // Reserved/bogon detection (pure)
+     check("scan: bogon doc range flagged", App.scanBogonTest("203.0.113.7"));
+     check("scan: private range flagged as bogon", App.scanBogonTest("192.168.1.1"));
+     check("scan: public ip not bogon", !App.scanBogonTest("8.8.8.8"));
+
+     // SPF policy parse (pure)
+     checkEq("scan: spf +all", App.scanSpfTest("v=spf1 +all"), "PERMISSIVE_ALL");
+     checkEq("scan: spf -all", App.scanSpfTest("v=spf1 ip4:1.2.3.4 -all"), "HARDFAIL");
+     checkEq("scan: spf ~all", App.scanSpfTest("v=spf1 -a ~all"), "SOFTFAIL");
+     checkEq("scan: spf ?all", App.scanSpfTest("v=spf1 ?all"), "NEUTRAL");
+     checkEq("scan: spf missing all term", App.scanSpfTest("v=spf1 mx"), "NO_ALL_TERM");
+     checkEq("scan: spf absent", App.scanSpfTest(""), "NONE");
+     checkEq("scan: spf malformed", App.scanSpfTest("not-spf"), "MALFORMED");
+
+     // Risk saturation curve 100*(1-exp(-pool/35))
+     check("scan: risk zero at empty pool", App.scanRiskFromPoolTest(0) == 0);
+     check("scan: risk ~63 at pool 35", App.scanRiskFromPoolTest(35) >= 60 && App.scanRiskFromPoolTest(35) <= 66);
+     check("scan: risk monotonic increasing", App.scanRiskFromPoolTest(70) > App.scanRiskFromPoolTest(35));
+     check("scan: risk saturates (>=95) at pool 140", App.scanRiskFromPoolTest(140) >= 95);
+
+     // Verdict bands
+     checkEq("scan: verdict clean", App.scanVerdictFromRiskTest(0), "CLEAN");
+     checkEq("scan: verdict low", App.scanVerdictFromRiskTest(25), "LOW RISK");
+     checkEq("scan: verdict suspicious", App.scanVerdictFromRiskTest(55), "SUSPICIOUS");
+     checkEq("scan: verdict high", App.scanVerdictFromRiskTest(85), "HIGH RISK");
+     checkEq("scan: verdict critical", App.scanVerdictFromRiskTest(92), "CRITICAL THREAT");
+     checkEq("scan: verdict confirmed", App.scanVerdictFromRiskTest(99), "CONFIRMED MALICIOUS");
+     checkEq("scan: threat level critical", App.scanThreatLevelFromVerdictTest("CRITICAL THREAT"), "CRITICAL");
+     checkEq("scan: threat level confirmed", App.scanThreatLevelFromVerdictTest("CONFIRMED MALICIOUS"), "CONFIRMED_MALICIOUS");
+
+     // SSL protocol grade (pure)
+     checkEq("scan: tls1.3 grade", App.scanSslGradeTest("TLSv1.3", false), "A+");
+     checkEq("scan: tls1.2 grade", App.scanSslGradeTest("TLSv1.2", false), "A");
+     checkEq("scan: tls1.1 grade", App.scanSslGradeTest("TLSv1.1", false), "B");
+     checkEq("scan: tls1.0 grade", App.scanSslGradeTest("TLSv1.0", false), "C");
+     checkEq("scan: sslv3 grade", App.scanSslGradeTest("SSLv3", false), "F");
+     checkEq("scan: expired grade", App.scanSslGradeTest("TLSv1.3", true), "F");
+     checkEq("scan: empty protocol grade", App.scanSslGradeTest("", false), "UNAVAILABLE");
+
+     // Security header scoring (pure)
+     check("scan: header score 8->100", App.scanHeaderScoreTest(8) == 100);
+     check("scan: header score 0->0", App.scanHeaderScoreTest(0) == 0);
+     checkEq("scan: header grade 95->A", App.scanHeaderGradeTest(95), "A");
+     checkEq("scan: header grade 30->E", App.scanHeaderGradeTest(30), "E");
+
+     // Correlation bonus (pure)
+     check("scan: correlation 0 when no signals", App.scanCorrelationBonusTest(false, false, 0, false, false, false, false, false) == 0);
+     check("scan: expired tls + web = 13", App.scanCorrelationBonusTest(true, false, 0, false, false, false, true, false) == 13);
+     check("scan: correlation capped at 15", App.scanCorrelationBonusTest(false, false, 3, true, true, true, true, false) == 15);
+     String np = App.scanCorrelationNotesTest(false, false, 0, false, false, false, false, true);
+     check("scan: notes mention private scope", np.contains("Private-range target"));
+     check("scan: notes honest when no feeds", App.scanCorrelationNotesTest(false, false, 0, false, false, false, false, false).contains("absence of threat"));
+
+     // Compare endpoint logic (pure)
+     String rr1 = "{\"overall_risk_score\":20,\"findings\":[{\"id\":\"F-001\"}]}";
+     String rr2 = "{\"overall_risk_score\":45,\"findings\":[{\"id\":\"F-001\"},{\"id\":\"F-002\"}]}";
+     String cmp = App.scanCompareTest(rr1, rr2);
+     check("scan: compare risk_delta 25", cmp.contains("\"risk_delta\":25"));
+     check("scan: compare new finding", cmp.contains("\"new_findings\":[\"F-002\"]"));
+     check("scan: compare no resolved", cmp.contains("\"resolved_findings\":[]"));
+
+     // JSON string-array parser (bulk targets)
+     List<String> tl = App.scanTargetListTest("{\"targets\":[\"a.com\",\"b.com\",\"c.com\"]}");
+     check("scan: bulk targets parsed", tl.size() == 3 && tl.get(0).equals("a.com"));
+
+     // Phase budget helper
+     check("scan: phase over budget detected", App.scanPhaseBudgetTest(250));
+     check("scan: phase within budget ok", !App.scanPhaseBudgetTest(50));
+
+     // Rate limiting (per-user, per-route)
+     App.scanRateResetTest();
+     boolean hits = true;
+     for (int i = 0; i < 5; i++) hits = hits && App.scanRateAllowedTest("scanuser@test.local", "/api/scan/deep", 5, 60000);
+     check("scan: 5 deep requests allowed", hits);
+     check("scan: 6th deep request blocked", !App.scanRateAllowedTest("scanuser@test.local", "/api/scan/deep", 5, 60000));
+     check("scan: different route unaffected", App.scanRateAllowedTest("scanuser@test.local", "/api/scan/bulk", 5, 60000));
+     App.scanRateResetTest();
+
+     // Cache primitives
+     App.scanCacheClearTest();
+     check("scan: cache empty after clear", App.scanCacheSizeTest() == 0);
+     check("scan: unknown cached scan miss", !App.scanCachedTest("SCAN-MISSING"));
+
+     // Templates
+     check("scan: full_assessment template", App.scanTemplatesTest().contains("\"id\":\"full_assessment\""));
+     check("scan: 5 templates", App.scanTemplatesTest().split("\"id\":").length == 6);
+
+     // History ndjson append/read
+     App.scanAppendHistoryTest("{\"scan_id\":\"SCAN-TEST-1\",\"target\":\"demo.example\"}");
+     check("scan: history records written", App.scanHistoryCountTest() >= 1);
+
+     // ---- runFullScan pipeline (offline-safe) ----
+     String rPriv = App.scanTestRun("192.168.1.1", "auto", "t@example.com");
+     check("scan: private flag set", rPriv.contains("\"PRIVATE_RANGE\""));
+     check("scan: private no external probing note", rPriv.contains("no external requests were made to the private range"));
+     check("scan: private active probe skipped", rPriv.contains("\"publicly_probeable\":false"));
+     check("scan: private has verdict", rPriv.contains("\"verdict\":\""));
+     check("scan: budget_exceeded boolean", rPriv.contains("\"budget_exceeded\":true") || rPriv.contains("\"budget_exceeded\":false"));
+     check("scan: engine version", rPriv.contains("\"engine_version\":\"APEX-SCAN-2.0\""));
+
+     String rBogon = App.scanTestRun("203.0.113.7", "auto", "t@example.com");
+     check("scan: bogon flag set", rBogon.contains("\"BOGON\""));
+     check("scan: bogon finding present", rBogon.contains("\"F-101\""));
+
+     String rDomain = App.scanTestRun("evil.example", "auto", "t@example.com");
+     check("scan: domain phases completed", rDomain.contains("\"classification\"") && rDomain.contains("\"passive_recon\""));
+     check("scan: domain risk breakdown", rDomain.contains("\"risk_breakdown\":{\"formula\":\"100 * (1 - exp(-pool/35))\""));
+     check("scan: domain evidence chain twice", countChar(rDomain, '"') > 0 && rDomain.split("\"evidence_chain\"", -1).length >= 2);
+     check("scan: domain tool_version apex", rDomain.contains("\"tool_version\":\"APEX-SCAN-2.0\""));
+     check("scan: domain mitre array present", rDomain.contains("\"mitre_attack\":["));
+     check("scan: domain iocs present", rDomain.contains("\"iocs\":"));
+     check("scan: domain findings array present", rDomain.contains("\"findings\":["));
+     check("scan: domain spf weakness deterministic", rDomain.contains("\"F-202\""));
+     check("scan: domain json balanced", countChar(rDomain, '{') == countChar(rDomain, '}') && countChar(rDomain, '[') == countChar(rDomain, ']'));
+
+     String rUrl = App.scanTestRun("https://evil.example/verify", "auto", "t@example.com");
+     checkEq("scan: url classified", App.scanTypeTest("https://evil.example/verify"), "URL");
+     check("scan: url host extracted", rUrl.contains("\"target_normalized\":\"https://evil.example/verify\""));
+
+     String rEmail = App.scanTestRun("attacker@evil.example", "auto", "t@example.com");
+     check("scan: email no network probing note", rEmail.contains("no network probing performed"));
+
+     check("scan: 12 phase_result keys", rDomain.split("\"recommendations\":\\[", -1).length >= 1 && rDomain.contains("\"phase_results\":{"));
    }
 }
