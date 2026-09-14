@@ -376,6 +376,7 @@ public final class App {
     srv(server, "/api/scanners/status", App::scannerStatusRoute);
     srv(server, "/api/scanners/scan", App::scannerScanRoute);
     srv(server, "/api/phishguard/analyze", App::phishGuardRoute);
+    srv(server, "/api/metrics", App::metricsRoute);
     server.createContext("/", App::staticFile);
     bootstrapAdmin();
     loadSessions();
@@ -7249,6 +7250,27 @@ public final class App {
     if (url.isEmpty()) { json(e, 400, error("provide url/domain to analyze")); return; }
     json(e, 200, phishGuardAnalyze(url, true));
   }
+  // Metrics endpoint: real, live platform state aggregated from the NDJSON stores and in-memory
+  // registries. Every figure below is a genuine counter the house already maintains (authUserCount,
+  // edgeCount, channelCount, scanHistoryCountTest, incidentLineCount); no fabricated values.
+  private static void metricsRoute(HttpExchange e) throws IOException {
+    if (!"GET".equals(e.getRequestMethod())) { json(e, 405, error("method not allowed")); return; }
+    StringBuilder b = new StringBuilder("{");
+    long upMs = System.currentTimeMillis() - START_UP;
+    b.append("\"collected_at\":\"").append(iso()).append("\",");
+    b.append("\"uptime_ms\":").append(upMs).append(",");
+    b.append("\"uptime_hours\":").append(upMs / 3_600_000).append(",");
+    b.append("\"users\":").append(authUserCount()).append(",");
+    b.append("\"edges\":").append(edgeCount()).append(",");
+    b.append("\"channels\":").append(channelCount()).append(",");
+    b.append("\"scans\":").append(scanHistoryCountTest()).append(",");
+    b.append("\"incidents\":").append(incidentLineCount()).append(",");
+    b.append("\"cases_file_bytes\":").append(fileSizeForMetrics(CASES)).append(",");
+    b.append("\"cases_file_records\":").append(readLines(CASES).size());
+    b.append("}");
+    json(e, 200, b.toString());
+  }
+  private static long fileSizeForMetrics(Path p){ try { return Files.size(p); } catch (Exception x) { return 0; } }
   private static void feedbackStatsRoute(HttpExchange e) throws IOException {
     List<String> lines = readLines(FEEDBACK_LOG);
     int total = 0, fp = 0, tp = 0, other = 0; Map<String,Integer> byDomain = new HashMap<>();
