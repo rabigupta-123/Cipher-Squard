@@ -2400,5 +2400,26 @@ function scanRender(d){
 }
 initScanTypes();
 
+(function(){
+  var stored=localStorage.getItem('sentinel-theme');
+  var sys=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  var theme=stored||sys;
+  function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('sentinel-theme',t);var b=document.getElementById('themeToggle');if(b){b.setAttribute('aria-pressed',t==='dark');b.setAttribute('aria-label','Toggle dark mode, currently '+(t==='dark'?'on':'off'));}}
+  applyTheme(theme);
+  var tb=document.getElementById('themeToggle');
+  if(!tb){tb=document.createElement('button');tb.id='themeToggle';tb.className='theme-toggle';tb.type='button';tb.setAttribute('aria-pressed',theme==='dark');tb.setAttribute('aria-label','Toggle dark mode, currently '+(theme==='dark'?'on':'off'));tb.textContent=theme==='dark'?'☀':'🌙';tb.style.position='fixed';tb.style.top='14px';tb.style.right='16px';tb.style.zIndex='9999';tb.addEventListener('click',function(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');});document.body.appendChild(tb);}
+  function loadMetrics(){
+    fetch('/api/metrics').then(function(r){return r.json();}).then(function(m){
+      if(!m||typeof m!=='object')return;
+      var wrap=document.getElementById('metricsPanel');
+      if(!wrap){wrap=document.createElement('div');wrap.id='metricsPanel';wrap.setAttribute('aria-live','polite');wrap.style.cssText='position:fixed;bottom:18px;left:18px;z-index:9998;background:var(--panel-bg,#fff);border:1px solid #d8dee9;border-radius:10px;padding:12px 14px;font:12px/1.5 system-ui;box-shadow:0 6px 22px rgba(0,0,0,.18);max-width:340px;';document.body.appendChild(wrap);}
+      var rows=[['Users',m.users],['Edges',m.edges],['Channels',m.channels],['Scans',m.scans],['Incidents',m.incidents],['Case records',m.cases_file_records]];
+      wrap.innerHTML='<b style="display:block;margin-bottom:6px">Live metrics <span aria-hidden="true">⚡</span></b>'+(m.uptime_ms?('<div>Uptime: <b>'+(m.uptime_ms/3.6e6).toFixed(1)+' h</b></div>'):'')+'<table style="width:100%;border-collapse:collapse;margin-top:6px" role="presentation"><tbody>'+rows.map(function(r){return '<tr><td style="padding:2px 8px 2px 0;color:var(--muted,#5b6573)">'+r[0]+'</td><td style="padding:2px 0;text-align:right"><b>'+r[1]+'</b></td></tr>';}).join('')+'</tbody></table>';
+    }).catch(function(){});
+  }
+  loadMetrics();
+  setInterval(loadMetrics,5000);
+})();
+
 </script>
 </body></html>
