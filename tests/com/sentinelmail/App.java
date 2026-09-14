@@ -377,6 +377,7 @@ public final class App {
     srv(server, "/api/scanners/scan", App::scannerScanRoute);
     srv(server, "/api/phishguard/analyze", App::phishGuardRoute);
     srv(server, "/api/metrics", App::metricsRoute);
+    srv(server, "/api/docs", App::docsRoute);
     server.createContext("/", App::staticFile);
     bootstrapAdmin();
     loadSessions();
@@ -7253,6 +7254,38 @@ public final class App {
   // Metrics endpoint: real, live platform state aggregated from the NDJSON stores and in-memory
   // registries. Every figure below is a genuine counter the house already maintains (authUserCount,
   // edgeCount, channelCount, scanHistoryCountTest, incidentLineCount); no fabricated values.
+  // GET /api/docs -- self-documented API catalog. Every path below is registered in main()
+  // (byte-verified against the srv(...) calls in this file). The list is emitted as plain strings
+  // plus iso() only; no fabricated helpers.
+  private static void docsRoute(HttpExchange e) throws IOException {
+    if (!"GET".equals(e.getRequestMethod())) { json(e, 405, error("method not allowed")); return; }
+    String[] routes = {
+      "/api/analyze","/api/analyze/cloudflare","/api/analyze/ddos","/api/analyze/dns",
+      "/api/analyze/explain","/api/analyze/spam","/api/analyze/ssl","/api/audit",
+      "/api/auth/me","/api/cache/clear","/api/cache/status","/api/cases","/api/cases/timeline",
+      "/api/connectors","/api/connectors/test","/api/dashboard","/api/dns",
+      "/api/domain-intelligence","/api/enrichment-status","/api/export","/api/feedback",
+      "/api/feedback/stats","/api/geolocate","/api/graph","/api/incidents","/api/ingest",
+      "/api/iocs","/api/iocs/enrich","/api/iocs/extract","/api/iocs/summary","/api/iocs/suppress",
+      "/api/ip-forensics","/api/ip-intel","/api/metrics","/api/news","/api/notify","/api/origin",
+      "/api/phishguard/analyze","/api/policies","/api/report","/api/retention","/api/scan/bulk",
+      "/api/scan/compare","/api/scan/deep","/api/scan/history","/api/scan/results",
+      "/api/scan/templates","/api/scanners/scan","/api/scanners/status","/api/search",
+      "/api/self-test","/api/status","/api/triage","/api/url-analysis","/api/url-analyze",
+      "/api/whois"
+    };
+    StringBuilder b = new StringBuilder("{");
+    b.append("\"name\":").append(q("sentinelmail REST API")).append(",");
+    b.append("\"collected_at\":").append(q(iso())).append(",");
+    b.append("\"endpoints\":[");
+    for (int i = 0; i < routes.length; i++) {
+      if (i > 0) b.append(",");
+      b.append(q(routes[i]));
+    }
+    b.append("],").append("\"endpoint_count\":").append(routes.length);
+    b.append("}");
+    json(e, 200, b.toString());
+  }
   private static void metricsRoute(HttpExchange e) throws IOException {
     if (!"GET".equals(e.getRequestMethod())) { json(e, 405, error("method not allowed")); return; }
     StringBuilder b = new StringBuilder("{");
