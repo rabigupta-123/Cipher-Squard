@@ -3,6 +3,7 @@
 **AICTE Cyber Security Cell Problem Statement 26106**  
 **Architecture:** Pure Java JDK 25 Local-First SOC Platform (Zero Runtime Third-Party Dependencies)
 
+[![CI Test Matrix](https://github.com/rabigupta-123/Cipher-Squard/actions/workflows/ci.yml/badge.svg)](https://github.com/rabigupta-123/Cipher-Squard/actions/workflows/ci.yml)
 [![JDK](https://img.shields.io/badge/JDK-25%20LTS-007396?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Platform](https://img.shields.io/badge/Platform-Pure%20Java%20SE-ED8B00?logo=java&logoColor=white)](https://www.oracle.com/java/)
 [![Security](https://img.shields.io/badge/Audit%20Assurance-Ed25519%20%2B%20SHA--256-brightgreen)](docs/SECURITY_REVIEW.md)

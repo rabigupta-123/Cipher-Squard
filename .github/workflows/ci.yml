@@ -1,0 +1,41 @@
+name: CI Test Matrix
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Suite (${{ matrix.os }}, Java ${{ matrix.java-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        java-version: [ '21' ]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+
+      - name: Make scripts executable
+        if: runner.os != 'Windows'
+        run: chmod +x run-tests.sh
+
+      - name: Run Test Matrix (Linux)
+        if: runner.os != 'Windows'
+        run: ./run-tests.sh
+
+      - name: Run Test Matrix (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File .\run-tests.ps1

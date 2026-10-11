@@ -40,14 +40,14 @@ if (-not (Get-Command javac -ErrorAction SilentlyContinue)) {
 }
 
 $sources = @(
-    Get-ChildItem -Path (Join-Path $root 'src') -Filter *.java |
+    Get-ChildItem -Path (Join-Path $root 'src') -Filter *.java -Recurse |
         ForEach-Object { $_.FullName }
 ) + @(
-    (Join-Path $root 'tests\Phase1Regression.java'),
-    (Join-Path $root 'tests\Regression.java'),
-    (Join-Path $root 'tests\phase2.java'),
-    (Join-Path $root 'tests\phase3.java'),
-    (Join-Path $root 'tests\EndToEndWorkflow.java')
+    (Join-Path $root (Join-Path 'tests' 'Phase1Regression.java')),
+    (Join-Path $root (Join-Path 'tests' 'Regression.java')),
+    (Join-Path $root (Join-Path 'tests' 'phase2.java')),
+    (Join-Path $root (Join-Path 'tests' 'phase3.java')),
+    (Join-Path $root (Join-Path 'tests' 'EndToEndWorkflow.java'))
 )
 
 $outDir = Join-Path $root 'build'
@@ -87,7 +87,10 @@ function Write-Stage {
 
 if (-not $Quiet) { Write-Host "`n==> compiling" -ForegroundColor Cyan }
 
-$compileLog = & javac --release 25 -encoding UTF-8 -d $outDir $sources 2>&1
+$javaVer = ((& javac -version 2>&1) -join ' ') -replace '.*javac\s+', '' -replace '\..*', ''
+$releaseArgs = if ($javaVer -match '^\d+$' -and [int]$javaVer -ge 21) { @("--release", "$javaVer") } else { @("--release", "21") }
+
+$compileLog = & javac @releaseArgs -encoding UTF-8 -d $outDir $sources 2>&1
 if ($LASTEXITCODE -ne 0) {
     $compileLog | ForEach-Object { Write-Host $_ -ForegroundColor Red }
     Write-Stage 'compile' 'FAIL'
