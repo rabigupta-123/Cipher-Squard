@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  sentryai:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - sentry_data:/data
+    environment:
+      - CIPHER_SQUAD_DATA_DIR=/data
+    restart: always
+
+volumes:
+  sentry_data:
