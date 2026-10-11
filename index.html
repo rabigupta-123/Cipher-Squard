@@ -1,0 +1,3477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CIPHER SQUAD — Security Operations Center</title>
+<style nonce="__CSP_NONCE__">
+/* ============================================================================
+   DESIGN TOKENS
+   Enterprise SOC + forensic investigation platform. Light, dense, restrained.
+   ========================================================================= */
+:root{
+  /* surfaces */
+  --bg:#F4F6FB;
+  --panel:#FFFFFF;
+  --panel-2:#FAFBFD;
+  --panel-3:#F7F9FC;
+  --line:#E3E8F0;
+  --line-2:#D2D9E4;
+  --line-3:#C2CBD9;
+
+  /* ink */
+  --ink:#1A1F2B;
+  --ink-2:#5A6478;
+  --ink-3:#8B95A7;
+  --ink-4:#AAB2C1;
+
+  /* security accent — orange/amber */
+  --accent:#D9700C;
+  --accent-2:#B85B06;
+  --accent-soft:#FDF1E4;
+  --accent-line:#F2C99B;
+
+  /* semantic status */
+  --green:#157F45;
+  --green-soft:#E7F4EC;
+  --green-line:#A9D8BF;
+  --amber:#A9700A;
+  --amber-soft:#FCF3E3;
+  --amber-line:#E8CE96;
+  --red:#BE2626;
+  --red-soft:#FBEAEA;
+  --red-line:#EFB3B3;
+  --blue:#1B67A8;
+  --blue-soft:#E9F1F9;
+  --blue-line:#AECDE8;
+  --gray:#78829A;
+  --gray-soft:#EFF1F6;
+  --gray-line:#D5DAE4;
+
+  /* type */
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+
+/* shape */
+  --r:3px;
+  --r-2:6px;
+  --shadow:0 1px 2px rgba(20,28,45,.05);
+  --shadow-2:0 4px 14px rgba(20,28,45,.09);
+
+  --sbw:232px;
+  --topbar:46px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font:14px/1.45 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+code,.mono{font-family:var(--mono)}
+::selection{background:var(--accent-soft);color:var(--accent-2)}
+
+/* scrollbars — restrained */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--line-3);border:3px solid var(--bg);border-radius:6px}
+*::-webkit-scrollbar-thumb:hover{background:var(--ink-4)}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* ============================================================================
+   APP SHELL
+   ========================================================================= */
+#shell{display:flex;min-height:100vh}
+
+/* ---------- SIDEBAR ---------- */
+#sidebar{
+  width:var(--sbw);flex:0 0 var(--sbw);
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.brand{
+  display:flex;align-items:center;gap:9px;
+  padding:13px 14px;border-bottom:1px solid var(--line);
+  background:var(--panel);
+}
+.brand-mark{
+  width:26px;height:26px;flex:0 0 26px;border-radius:var(--r);
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font:700 12px/1 var(--mono);letter-spacing:.02em;
+}
+.brand-txt{min-width:0}
+.brand-name{font:700 13px/1.15 var(--sans);letter-spacing:.10em;text-transform:uppercase}
+.brand-sub{font:600 9.5px/1.3 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-top:2px}
+
+.nav{flex:1;padding:6px 0 14px}
+.nav-sect{padding:12px 14px 5px}
+.nav-sect span{font:700 9.5px/1 var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-4)}
+.nav-i{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 14px;cursor:pointer;
+  border-left:2px solid transparent;
+  font-size:12.5px;color:var(--ink-2);
+}
+.nav-i:hover{background:var(--panel-3);color:var(--ink)}
+.nav-i.on{background:var(--accent-soft);border-left-color:var(--accent);color:var(--accent-2);font-weight:600}
+.nav-i .ic{width:15px;flex:0 0 15px;text-align:center;font-size:11px;color:var(--ink-3)}
+.nav-i.on .ic{color:var(--accent)}
+.nav-i .lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-i .tg{
+  font:700 8.5px/1 var(--sans);letter-spacing:.06em;
+  padding:2px 4px;border-radius:var(--r-2);
+  background:var(--gray-soft);color:var(--gray);border:1px solid var(--gray-line);
+}
+.nav-foot{
+  padding:10px 14px;border-top:1px solid var(--line);
+  font:600 9.5px/1.5 var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4);
+}
+
+/* ---------- TOPBAR ---------- */
+#mainwrap{flex:1;min-width:0;display:flex;flex-direction:column}
+#topbar{
+  height:var(--topbar);flex:0 0 var(--topbar);
+  background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;padding:0 18px;
+  position:sticky;top:0;z-index:40;
+}
+.crumb{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+.crumb b{font:600 12.5px/1 var(--sans);white-space:nowrap}
+.crumb .sep{color:var(--ink-4);font-size:11px}
+.crumb span{font:500 11.5px/1 var(--sans);color:var(--ink-3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.top-r{display:flex;align-items:center;gap:8px}
+#utc{font:600 11px/1 var(--mono);color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.search{
+  display:flex;align-items:center;gap:6px;
+  height:27px;padding:0 9px;min-width:212px;
+  background:var(--panel-3);border:1px solid var(--line-2);border-radius:var(--r);
+}
+.search input{
+  flex:1;min-width:0;border:0;background:transparent;outline:0;
+  font-size:12px;color:var(--ink);
+}
+.search input::placeholder{color:var(--ink-4)}
+/* Glyph colour comes from a class, not an inline style, so the CSP can stay strict. */
+.search .mag{color:var(--ink-4);font-size:13px;line-height:1}
+.lnk{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-line);cursor:pointer}
+.lnk:hover{border-bottom-color:var(--accent)}
+.ibwrap{display:flex;flex-direction:column;gap:8px}
+.svgtpl{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+
+/* search results flyout — anchored to the topbar search field */
+.sout{position:fixed;right:14px;top:60px;width:min(560px,calc(100vw - 28px));max-height:min(62vh,560px);
+  overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-2);
+  box-shadow:0 14px 38px rgba(20,28,45,.16);padding:9px;display:none;z-index:70}
+.sout.on{display:block}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(20,28,45,.42);display:none;align-items:center;
+  justify-content:center;padding:18px;z-index:90}
+.modal.on{display:flex}
+.lcard{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-2);
+  box-shadow:0 20px 52px rgba(20,28,45,.24);padding:18px;width:min(480px,100%);
+  max-height:calc(100vh - 36px);overflow:auto;display:flex;flex-direction:column;gap:13px}
+.lhead{display:flex;align-items:center;gap:11px}
+.lhead h2{font-size:15px}
+.lhead .sub{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.lmark{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:#fff;font:800 13px var(--sans);letter-spacing:.02em}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,14px);opacity:0;
+  background:var(--ink);color:#fff;border-radius:var(--r);padding:9px 14px;font-size:12.5px;
+  box-shadow:0 12px 30px rgba(20,28,45,.3);transition:opacity .18s ease,transform .18s ease;
+  pointer-events:none;z-index:95;max-width:min(520px,calc(100vw - 28px))}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.ok{background:var(--green)}
+.toast.warn{background:var(--red)}
+.who{
+  display:flex;align-items:center;gap:7px;padding:3px 9px 3px 4px;
+  border:1px solid var(--line-2);border-radius:var(--r);background:var(--panel-3);
+}
+.who .av{
+  width:20px;height:20px;border-radius:var(--r-2);background:var(--ink-2);color:#fff;
+  display:flex;align-items:center;justify-content:center;font:700 9.5px/1 var(--sans);
+  text-transform:uppercase;
+}
+.who .nm{font:600 11.5px/1 var(--sans)}
+.who .rl{font:600 9px/1 var(--sans);color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+
+/* ---------- LIVE / status pills ---------- */
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:var(--r-2);
+  font:700 9.5px/1.25 var(--sans);letter-spacing:.07em;text-transform:uppercase;
+  border:1px solid;white-space:nowrap;
+}
+.dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+.p-green{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+.p-amber{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+.p-red{background:var(--red-soft);color:var(--red);border-color:var(--red-line)}
+.p-blue{background:var(--blue-soft);color:var(--blue);border-color:var(--blue-line)}
+.p-gray{background:var(--gray-soft);color:var(--gray);border-color:var(--gray-line)}
+.p-accent{background:var(--accent-soft);color:var(--accent-2);border-color:var(--accent-line)}
+.p-live .dot{animation:bp 2s ease-in-out infinite}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.28}}
+
+/* ============================================================================
+   PAGE / PANEL SYSTEM
+   ========================================================================= */
+#view{flex:1;padding:16px 18px 28px;max-width:1680px;width:100%}
+.ph{margin-bottom:13px}
+.ph h1{
+  margin:0;font:700 17px/1.2 var(--sans);letter-spacing:.04em;text-transform:uppercase;
+}
+.ph .sub{margin-top:4px;font-size:12px;color:var(--ink-2);max-width:105ch}
+.ph-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);margin-bottom:12px;
+}
+.ph-2{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel-2);
+  border-radius:var(--r) var(--r) 0 0;
+}
+.ph-2 h2{
+  margin:0;font:700 10.5px/1 var(--sans);letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2);
+  display:flex;align-items:center;gap:7px;
+}
+.ph-2 h2 .bar{width:2px;height:11px;background:var(--accent);border-radius:1px}
+.ph-2 .act{display:flex;align-items:center;gap:6px}
+.pb{padding:11px 12px}
+.pb.tight{padding:0}
+.note{font-size:11px;color:var(--ink-3);line-height:1.5}
+.note.wr{border-left:2px solid var(--amber);background:var(--amber-soft);
+  padding:7px 9px;border-radius:0 var(--r) var(--r) 0;color:var(--amber)}
+.note.nc{border-left:2px solid var(--gray);background:var(--gray-soft);
+  padding:7px 9px;border-radius:0 var(--r) var(--r) 0;color:var(--gray)}
+.empty{padding:22px 12px;text-align:center;color:var(--ink-4);font-size:12px}
+.empty b{display:block;font:700 10.5px/1.4 var(--sans);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+
+/* grids */
+.g5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;align-items:start}
+.ws{display:grid;grid-template-columns:48fr 52fr;gap:12px;align-items:start}
+
+/* ============================================================================
+   METRIC CARDS
+   ========================================================================= */
+.mc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 11px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.mc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--line-3)}
+.mc.g::before{background:var(--green)}
+.mc.a::before{background:var(--accent)}
+.mc.r::before{background:var(--red)}
+.mc.b::before{background:var(--blue)}
+.mc.y::before{background:var(--gray)}
+.mc-l{display:flex;align-items:center;justify-content:space-between;gap:6px;
+  font:700 9.5px/1.3 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.mc-v{font:700 26px/1.1 var(--mono);margin:7px 0 3px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.mc-v.unknown{font-size:14px;color:var(--ink-4);letter-spacing:.04em}
+.mc-f{font:500 10.5px/1.4 var(--sans);color:var(--ink-3)}
+
+/* ============================================================================
+   TABLES
+   ========================================================================= */
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t th{
+  text-align:left;padding:6px 9px;background:var(--panel-3);
+  font:700 9.5px/1.3 var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+  border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1;
+}
+table.t td{padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t tbody tr:last-child td{border-bottom:0}
+table.t tbody tr:hover{background:var(--panel-2)}
+table.t td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+table.t td.mono{font-family:var(--mono);font-size:11.5px;word-break:break-all}
+.twrap{max-height:330px;overflow:auto}
+.twrap.tall{max-height:520px}
+.clickable{cursor:pointer}
+
+/* ============================================================================
+   KEY/VALUE
+   ========================================================================= */
+dl.kv{display:grid;grid-template-columns:minmax(96px,auto) 1fr;gap:0}
+dl.kv>dt{
+  padding:5px 10px 5px 0;font:600 9.5px/1.4 var(--sans);letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--line);
+}
+dl.kv>dd{
+  padding:5px 0;margin:0;font-size:12px;color:var(--ink);
+  border-bottom:1px solid var(--line);word-break:break-word;
+}
+dl.kv>dt:last-of-type,dl.kv>dd:last-of-type{border-bottom:0}
+dl.kv .mono{font-size:11.5px}
+
+/* ============================================================================
+   BUTTONS
+   ========================================================================= */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:29px;padding:0 12px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r);
+  font:700 10px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);
+}
+.btn:hover:not(:disabled){border-color:var(--line-3);color:var(--ink);background:var(--panel-2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover:not(:disabled){background:var(--accent-2);border-color:var(--accent-2);color:#fff}
+.btn.sm{height:24px;padding:0 8px;font-size:9.5px}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,
+.nav-i:focus-visible,.clickable:focus-visible{
+  outline:2px solid var(--blue);outline-offset:1px
+}
+
+/* inputs */
+.inp,.ta{
+  width:100%;padding:7px 9px;background:var(--panel);
+  border:1px solid var(--line-2);border-radius:var(--r);outline:0;
+  font:12.5px/1.5 var(--mono);color:var(--ink);
+}
+.inp:focus,.ta:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-soft)}
+.ta{min-height:340px;resize:vertical;white-space:pre-wrap;word-break:break-word}
+.inp.sans{font-family:var(--sans);font-size:12.5px}
+select.inp{cursor:pointer}
+
+/* ============================================================================
+   GAUGE (SVG attribute-driven — no inline style, CSP-safe)
+   ========================================================================= */
+.gauge{display:block;width:100%;max-width:280px;margin:0 auto}
+.gauge .bg{stroke:var(--line)}
+.gauge .fg{transition:stroke-dashoffset 800ms cubic-bezier(.4,0,.2,1)}
+.gauge .num{font:700 30px var(--mono);fill:var(--ink);font-variant-numeric:tabular-nums}
+.gauge .cap{font:700 8.5px var(--sans);letter-spacing:.12em;fill:var(--ink-3)}
+
+/* meter via svg rect (width attribute, not style) */
+.meter{display:block;width:100%;height:6px}
+.meter .tr{fill:var(--line)}
+.meter .fl{transition:width 700ms cubic-bezier(.4,0,.2,1)}
+.f-green{fill:var(--green)} .f-amber{fill:var(--amber)} .f-red{fill:var(--red)}
+.f-blue{fill:var(--blue)} .f-gray{fill:var(--gray)} .f-accent{fill:var(--accent)}
+/* Stroke counterparts. The .f- family above only sets fill, so an arc drawn with
+   stroke and given an .f- class would render with no paint at all. Anything that
+   is stroked uses these instead. */
+.s-green{stroke:var(--green)} .s-amber{stroke:var(--amber)} .s-red{stroke:var(--red)}
+.s-blue{stroke:var(--blue)} .s-gray{stroke:var(--gray)} .s-accent{stroke:var(--accent)}
+
+/* risk ring */
+.ring{display:block;flex:0 0 auto}
+.ring circle{transition:stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1)}
+.ring .trk{stroke:var(--line)}
+.ring .val{font:700 19px var(--mono);fill:var(--ink);font-variant-numeric:tabular-nums}
+.ring .max{font:600 8.5px var(--sans);fill:var(--ink-4);letter-spacing:.08em}
+.ring .cap{font:700 8px var(--sans);letter-spacing:.09em;fill:var(--ink-3)}
+
+/* ============================================================================
+   MODULE BOARD
+   ========================================================================= */
+.mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:8px}
+.mod{border:1px solid var(--line);border-radius:var(--r);padding:8px 9px;background:var(--panel-2);
+  transition:border-color 240ms ease,background 240ms ease}
+.mod:hover{border-color:var(--line-3)}
+.mod.on{border-color:var(--green-line);background:var(--green-soft)}
+.mod.warn{border-color:var(--amber-line);background:var(--amber-soft)}
+.mod.off{border-color:var(--gray-line);background:var(--gray-soft)}
+.mod-h{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.mod-n{font:700 10px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;flex:1;color:var(--ink-2)}
+.mod-s{font:700 9px/1 var(--sans);letter-spacing:.07em;text-transform:uppercase}
+.mod-d{font:500 10.5px/1.45 var(--sans);color:var(--ink-3)}
+.mod.on .mod-s{color:var(--green)} .mod.warn .mod-s{color:var(--amber)}
+.mod.off .mod-s{color:var(--gray)}
+
+/* ============================================================================
+   EVENT STREAM
+   ========================================================================= */
+.ev{display:grid;grid-template-columns:66px 60px 1fr auto;gap:8px;align-items:baseline;
+  padding:6px 10px;border-bottom:1px solid var(--line);font-size:11.5px}
+.ev:last-child{border-bottom:0}
+.ev:hover{background:var(--panel-2)}
+.ev-t{font:600 10.5px var(--mono);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ev-s{font:700 9px/1.4 var(--sans);letter-spacing:.07em;text-transform:uppercase}
+.ev-d{color:var(--ink);min-width:0;word-break:break-word}
+.ev-x{font:600 10px var(--mono);color:var(--ink-4)}
+.sev-INFO{color:var(--blue)} .sev-LOW{color:var(--green)}
+.sev-MEDIUM{color:var(--amber)} .sev-HIGH{color:var(--accent)} .sev-CRITICAL{color:var(--red)}
+.ev.enter{animation:evin 320ms cubic-bezier(.2,.8,.3,1)}
+@keyframes evin{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
+
+/* ============================================================================
+   FINDINGS
+   ========================================================================= */
+.layer{border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;overflow:hidden;background:var(--panel)}
+.layer-h{display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--panel-3);
+  border-bottom:1px solid var(--line)}
+.layer-h b{font:700 9.5px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;flex:1;color:var(--ink-2)}
+.layer-h .n{font:700 9px/1 var(--sans);color:var(--ink-4)}
+.layer-d{padding:6px 9px 0;font-size:11px;color:var(--ink-3);line-height:1.45}
+.layer .find:first-of-type{margin-top:6px}
+.find{padding:7px 9px;border-bottom:1px solid var(--line)}
+.find:last-child{border-bottom:0}
+.find-h{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.find-b{font:700 10px/1 var(--sans);letter-spacing:.05em}
+.find-t{font-size:12px;color:var(--ink);font-weight:500}
+.find-m{font-size:10.5px;color:var(--ink-3);margin-top:3px;line-height:1.5}
+.find-m .lb{color:var(--ink-4);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:9.5px}
+
+/* family scoring */
+.fam{border:1px solid var(--line);border-radius:var(--r);padding:8px 9px;background:var(--panel-2)}
+.fam-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:6px}
+.fam-n{font:700 9.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fam-v{font:700 14px/1 var(--mono);font-variant-numeric:tabular-nums}
+.fam-f{font-size:10px;color:var(--ink-4);margin-top:5px}
+
+/* verdict block */
+.verd{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.verd>div{background:var(--panel);padding:8px 10px}
+.verd dt{font:700 9px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.verd dd{margin:3px 0 0;font:600 13px/1.3 var(--sans)}
+.action{border:1px solid var(--accent-line);background:var(--accent-soft);
+  border-radius:var(--r);padding:9px 11px;margin-top:9px}
+.action .t{font:700 9.5px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--accent-2)}
+.action .v{font:700 15px/1.3 var(--sans);margin:4px 0 3px}
+.action .d{font-size:11px;color:var(--ink-2);line-height:1.5}
+
+/* ============================================================================
+   GRAPH
+   ========================================================================= */
+.gwrap{position:relative;background:
+  linear-gradient(0deg,rgba(234,238,246,.5) 1px,transparent 1px) 0 0/100% 22px,
+  linear-gradient(90deg,rgba(234,238,246,.5) 1px,transparent 1px) 0 0/22px 100%,var(--panel-2);
+  border-bottom:1px solid var(--line)}
+#graph{display:block;width:100%;height:452px;cursor:grab;touch-action:none}
+#graph.drag{cursor:grabbing}
+.gnode{cursor:pointer;transform-box:fill-box;transform-origin:center}
+.gnode rect{transition:stroke-width 160ms ease,filter 160ms ease}
+/* Graph nodes are rebuilt on each render, so they enter with a one-shot
+   keyframe. The gd0-gd9 classes carry the stagger, which keeps the delay in
+   the stylesheet instead of in an inline style. */
+.gnode.gin{animation:gnodein 420ms cubic-bezier(.4,0,.2,1) both}
+.gnode.gd0{animation-delay:0ms}   .gnode.gd1{animation-delay:30ms}
+.gnode.gd2{animation-delay:60ms}  .gnode.gd3{animation-delay:90ms}
+.gnode.gd4{animation-delay:120ms} .gnode.gd5{animation-delay:150ms}
+.gnode.gd6{animation-delay:180ms} .gnode.gd7{animation-delay:210ms}
+.gnode.gd8{animation-delay:240ms} .gnode.gd9{animation-delay:270ms}
+@keyframes gnodein{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.gnode text{font:600 9px var(--mono);fill:var(--ink-2);pointer-events:none;
+  dominant-baseline:middle;text-anchor:middle}
+.gnode .sub{font:500 8px var(--sans);fill:var(--ink-4)}
+.gnode.sel rect{stroke-width:2}
+.gnode.dim{opacity:.22}
+.gedge{transition:stroke 200ms ease,stroke-width 200ms ease,opacity 200ms ease}
+.gedge.trace{stroke-width:2.4;animation:flow 1.15s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-26}}
+.glbl{font:500 8.5px var(--mono);fill:var(--ink-4);pointer-events:none}
+.gtools{display:flex;align-items:center;gap:6px;padding:6px 9px;border-bottom:1px solid var(--line);
+  background:var(--panel);flex-wrap:wrap}
+.gsel{border:1px solid var(--line-2);background:var(--panel-2);border-radius:var(--r);padding:6px 9px;
+  font-size:11.5px;flex:1;min-width:180px}
+.gsel b{font:700 9.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  display:block;margin-bottom:3px}
+.gedge{fill:none;stroke:var(--line-2);stroke-width:1.3}
+.gnode rect{fill:var(--panel);stroke:var(--line-2);stroke-width:1.2}
+.gnode.t-accent rect{stroke:var(--accent);fill:var(--accent-soft)}
+.gnode.t-blue   rect{stroke:var(--blue);fill:var(--blue-soft)}
+.gnode.t-amber  rect{stroke:var(--amber);fill:var(--amber-soft)}
+.gnode.t-red    rect{stroke:var(--red);fill:var(--red-soft)}
+.gnode.t-gray   rect{stroke:var(--line-2);fill:var(--gray-soft)}
+.gnode.sel rect{filter:drop-shadow(0 2px 5px rgba(20,28,45,.2))}
+.gnode.sel text{fill:var(--ink)}
+#arrow path{fill:var(--line-2)}
+.gtracekey{display:flex;flex-wrap:wrap;gap:4px 10px;padding:5px 9px;border-top:1px solid var(--line);
+  font:500 10px var(--sans);color:var(--ink-3);background:var(--panel)}
+.gtracekey i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;
+  vertical-align:middle;border:1px solid var(--line-2)}
+.kv-wrap{display:flex;flex-direction:column;gap:10px}
+
+/* relay path */
+.relay{position:relative;padding:4px 0}
+.hop{display:grid;grid-template-columns:26px 1fr;gap:9px;align-items:start}
+.hop-r{position:relative;display:flex;flex-direction:column;align-items:center;align-self:stretch}
+.hop-n{width:20px;height:20px;flex:0 0 20px;border-radius:50%;border:1.5px solid var(--blue);
+  background:var(--panel);color:var(--blue);display:flex;align-items:center;justify-content:center;
+  font:700 9px/1 var(--mono);z-index:1}
+.hop.res .hop-n{border-color:var(--gray);color:var(--gray)}
+.hop-l{width:1.5px;flex:1;background:var(--line-2);min-height:14px}
+.hop:last-child .hop-l{display:none}
+.hop-b{padding-bottom:12px;min-width:0}
+.hop-t{font:700 9.5px/1.3 var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2)}
+.hop-m{font:11px/1.5 var(--mono);color:var(--ink-2);margin-top:3px;word-break:break-all}
+.hop-r2{font:11px/1.5 var(--sans);color:var(--ink-3);margin-top:2px}
+
+/* timeline */
+.tl{position:relative;padding-left:19px}
+.tl::before{content:"";position:absolute;left:5px;top:5px;bottom:5px;width:1.5px;background:var(--line-2)}
+.tl-e{position:relative;padding:0 0 12px}
+.tl-e:last-child{padding-bottom:0}
+.tl-d{position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;
+  background:var(--panel);border:2px solid var(--blue)}
+.tl-e.warn .tl-d{border-color:var(--amber)} .tl-e.ok .tl-d{border-color:var(--green)}
+.tl-t{font:700 9.5px/1.3 var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2)}
+.tl-t2{font:10.5px/1.4 var(--mono);color:var(--ink-3);font-variant-numeric:tabular-nums}
+/* Timeline rows enter in sequence. Delays live in these classes so no inline
+   style is needed, and they cap at 330ms so a long timeline does not crawl. */
+.tl-e.tlin{animation:tlentry 380ms ease-out both}
+.tl-e.td0{animation-delay:0ms}    .tl-e.td1{animation-delay:28ms}
+.tl-e.td2{animation-delay:56ms}   .tl-e.td3{animation-delay:84ms}
+.tl-e.td4{animation-delay:112ms}  .tl-e.td5{animation-delay:140ms}
+.tl-e.td6{animation-delay:168ms}  .tl-e.td7{animation-delay:196ms}
+.tl-e.td8{animation-delay:224ms}  .tl-e.td9{animation-delay:252ms}
+.tl-e.td10{animation-delay:280ms} .tl-e.td11{animation-delay:308ms}
+@keyframes tlentry{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+/* The rail is drawn behind the dots; fading it in avoids a hard line appearing
+   before its markers. */
+.tl::before{animation:tlfade 500ms ease-out both}
+@keyframes tlfade{from{opacity:0}to{opacity:1}}
+
+/* audit strip */
+.aud{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:center;
+  padding:10px 12px;border-radius:var(--r);border:1px solid}
+.aud.ok{background:var(--green-soft);border-color:var(--green-line)}
+.aud.warn{background:var(--amber-soft);border-color:var(--amber-line)}
+.aud.bad{background:var(--red-soft);border-color:var(--red-line)}
+.aud-k{font:700 13px/1.2 var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.aud.ok .aud-k{color:var(--green)} .aud.warn .aud-k{color:var(--amber)} .aud.bad .aud-k{color:var(--red)}
+.aud-d{font-size:11.5px;color:var(--ink-2);line-height:1.5}
+.aud-d code{font-size:10.5px;word-break:break-all}
+
+/* report numbered sections */
+.rep{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.rep-h{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.rep-h .no{width:17px;height:17px;flex:0 0 17px;border-radius:var(--r-2);background:var(--ink-2);
+  color:#fff;display:flex;align-items:center;justify-content:center;font:700 9px/1 var(--mono)}
+.rep-h b{font:700 9.5px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+
+/* ========================================================================
+   RESPONSIVE — sidebar collapses, workspace goes vertical
+   ======================================================================== */
+#navtoggle{display:none}
+@media(max-width:1180px){
+  .g5{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .split{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:1000px){
+  .ws{grid-template-columns:minmax(0,1fr)}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .search{min-width:132px}
+  #utc{display:none}
+}
+@media(max-width:820px){
+  :root{--sbw:0px}
+  #navtoggle{display:inline-flex}
+  #sidebar{position:fixed;left:0;top:0;z-index:60;width:236px;flex-basis:236px;
+    transform:translateX(-100%);transition:transform 200ms ease;
+    box-shadow:var(--shadow-2)}
+  #sidebar.open{transform:none}
+  #scrim{position:fixed;inset:0;background:rgba(20,28,45,.34);z-index:55;display:none}
+  #scrim.on{display:block}
+  .g5,.g4,.g3,.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #view{padding:13px 12px 24px}
+  .who .rl{display:none}
+}
+@media(max-width:560px){
+  .g5,.g4,.g3,.g2{grid-template-columns:minmax(0,1fr)}
+  .search{min-width:96px}
+  #crumb .sep,#crumb span{display:none}
+  .ev{grid-template-columns:58px 54px 1fr}
+  .ev-x{display:none}
+}
+
+/* ========================================================================
+   MOTION — only where it carries information
+   ======================================================================== */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;scroll-behavior:auto !important;
+  }
+  .gauge .fg,.meter .fl,.ring circle,.gedge{transition:none !important}
+  /* One-shot entry animations are neutralised above by animation-duration, but
+     the node delay classes would still hold a node invisible for its delay
+     window. Zeroing them as well means a reduced-motion viewer sees the graph
+     complete immediately. */
+  .gnode.gin,.tl-e.tlin,.tl::before{animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<div id="shell">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <nav id="sidebar" aria-label="Primary">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">CS</div>
+      <div class="brand-txt">
+        <div class="brand-name">Cipher Squad</div>
+        <div class="brand-sub">Email Threat Forensics</div>
+      </div>
+    </div>
+    <div class="nav" id="nav"></div>
+    <div class="nav-foot">
+      AICTE PS ID 26106<br>
+      Local analysis engine<br>
+      Weights: HAND_SET_UNCALIBRATED —<br>risk scores are advisory, not calibrated
+    </div>
+  </nav>
+  <div id="scrim"></div>
+
+  <!-- Namespace donor for sv(): the parser puts the SVG namespace on this node, so the
+       script never has to spell out an absolute URI. Hidden, and never populated. -->
+  <svg id="svgtpl" class="svgtpl" aria-hidden="true" focusable="false"></svg>
+
+  <!-- ==================== MAIN ==================== -->
+  <div id="mainwrap">
+    <header id="topbar">
+      <button class="btn sm" id="navtoggle" aria-label="Toggle navigation">☰</button>
+      <div class="crumb" id="crumb"></div>
+      <div class="top-r">
+        <span class="pill p-gray" id="livePill"><span class="dot"></span>Offline</span>
+        <span class="pill p-gray" id="postPill">Posture —</span>
+        <span id="utc">—:—:— UTC</span>
+        <div class="search">
+          <span class="mag" aria-hidden="true">⌕</span>
+          <input id="q" type="search" placeholder="Search case, IP or domain..."
+                 aria-label="Search cases, IP addresses or domains" autocomplete="off">
+        </div>
+        <div class="who" id="who">
+          <div class="av" aria-hidden="true">–</div>
+          <div>
+            <div class="nm" id="whoNm">Signed out</div>
+            <div class="rl" id="whoRl">No session</div>
+          </div>
+        </div>
+        <button class="btn sm" id="btnOut" disabled>Sign out</button>
+      </div>
+    </header>
+
+<main id="view"></main>
+  </div>
+</div>
+
+<div id="searchOut" class="sout" aria-live="polite"></div>
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-label="Sign in" aria-hidden="true"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script nonce="__CSP_NONCE__">
+(function () {
+"use strict";
+
+/* ======================================================================
+   0. HONESTY HELPERS
+   Every value that reaches the screen came from the backend. These three
+   states are distinct and are never collapsed into each other:
+     UNKNOWN         backend did not supply a value
+     NO DATA         backend supplied an empty collection
+     NOT CONFIGURED  the module/provider does not exist in this build
+   ====================================================================== */
+/* The three absence markers are distinct and are never collapsed. "Unknown" means
+   the backend did not report the value; "No data" means the field was reported as
+   absent; "Not configured" means the capability is not compiled into this build. */
+var UNKNOWN = "Unknown", NODATA = "NO DATA", NOCFG = "NOT CONFIGURED", NA = "N/A";
+
+function isEmpty(v) {
+  return v === null || v === undefined || v === "" ||
+         (Array.isArray(v) && v.length === 0);
+}
+/** Display form of a value the backend may legitimately not have sent. */
+function s(v) {
+  if (v === undefined) return UNKNOWN;
+  if (v === null || v === "") return UNKNOWN;
+  if (typeof v === "boolean") return v ? "YES" : "NO";
+  if (typeof v === "number") return !isFinite(v) ? UNKNOWN : String(v);
+  if (Array.isArray(v)) return v.length ? v.join(", ") : NODATA;
+  return String(v);
+}
+/** Numeric display that never invents a zero. */
+function num(v, dp) {
+  if (typeof v !== "number" || !isFinite(v)) return UNKNOWN;
+  return dp === undefined ? String(v) : v.toFixed(dp);
+}
+function count(v) { return typeof v === "number" && isFinite(v) ? String(v) : UNKNOWN; }
+/* obj() is a normaliser, not a test: it always hands back an object so that
+   obj(payload).field reads yield undefined instead of throwing. Every absence
+   check still goes through num/count/lst, which render undefined as UNKNOWN. */
+function obj(o) { return (o && typeof o === "object") ? o : {}; }
+function lst(a) { return Array.isArray(a) ? a : []; }
+/** XSS-safe: textContent only. Never a number, never a guess. */
+function pct(v) {
+  if (typeof v !== "number" || !isFinite(v)) return UNKNOWN;
+  var n = Math.max(0, Math.min(100, v * 100));
+  return n.toFixed(1) + "%";
+}
+function when(ms) {
+  if (typeof ms !== "number" || !isFinite(ms) || ms < 0) return UNKNOWN;
+  return new Date(ms).toISOString().replace("T", " ").replace(/\.\d+Z$/, "Z");
+}
+function utcNow() {
+  return new Date().toISOString().slice(11, 19) + " UTC";
+}
+function trunc(v, n) {
+  var t = String(v);
+  return t.length > n ? t.slice(0, n - 1) + "…" : t;
+}
+
+/* ======================================================================
+   1. SAFE DOM CONSTRUCTION
+   Raw HTML is structurally impossible: every text node goes through
+   textContent, and `html` as a key throws. This is the XSS boundary and
+   it matters here because email headers are the hostile input.
+   ====================================================================== */
+function h(tag, attrs) {
+  var n = document.createElement(tag), k, v;
+  for (k in attrs || null) {
+    if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+    v = attrs[k];
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "text") { n.textContent = String(v); continue; }
+    if (k === "html") { throw new Error("raw html is not permitted"); }
+    if (k.slice(0, 2) === "on") { n.addEventListener(k.slice(2), v); continue; }
+    if (v === true) { n.setAttribute(k, ""); continue; }
+    n.setAttribute(k, String(v));
+  }
+  for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
+  return n;
+}
+/* The SVG namespace is read off the hidden template below rather than written as a
+   literal. The namespace URI is an identifier, not a fetch, but this document
+   carries no absolute URLs at all, which is easier to audit and to assert. */
+var SVGNS = document.getElementById("svgtpl").namespaceURI;
+function sv(tag, attrs) {
+  var n = document.createElementNS(SVGNS, tag), k, v;
+  for (k in attrs || null) {
+    if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+    v = attrs[k];
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "text") { n.textContent = String(v); continue; }
+    if (k.slice(0, 2) === "on") { n.addEventListener(k.slice(2), v); continue; }
+    n.setAttribute(k, String(v));
+  }
+  for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
+  return n;
+}
+function append(parent, child) {
+  if (child === null || child === undefined || child === false || child === "") return parent;
+  if (Array.isArray(child)) {
+    for (var i = 0; i < child.length; i++) append(parent, child[i]);
+    return parent;
+  }
+  parent.appendChild(
+    child.nodeType ? child : document.createTextNode(String(child)));
+  return parent;
+}
+function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); return n; }
+function frag() { var f = document.createDocumentFragment(); return f; }
+
+/* ======================================================================
+   2. APPLICATION STATE
+   Nothing here is seeded with a plausible-looking value. `counters`
+   counts things this console actually did and observed.
+   ====================================================================== */
+var MAX_BODY = 2 * 1024 * 1024;
+var PAGE_SIZE = 25;
+
+var state = {
+  token: null,
+  user: null,
+  roles: [],
+  analysis: null,
+  report: null,
+  cases: null,
+  audit: null,
+  live: false,
+  lastOkAt: 0,
+  counters: { analyzed: 0, openedCase: 0, iocSeen: 0, reports: 0, verifies: 0 },
+  events: [],
+  route: { name: "command-center", arg: null },
+  lastAnalysisCorrelation: null,
+  graph: null
+};
+
+/* ======================================================================
+   3. TRANSPORT
+   Every call emits a real event carrying the real endpoint, real HTTP
+   status and real outcome. Nothing is invented. No request is made
+   unauthenticated unless it is explicitly a credential probe.
+   ====================================================================== */
+function api(path, opts) {
+  opts = opts || {};
+  var init = { method: opts.method || "GET", cache: "no-store", credentials: "omit" };
+  var hdrs = {};
+  if (state.token) hdrs["Authorization"] = "Bearer " + state.token;
+  if (opts.basic) {
+    hdrs["Authorization"] = "Basic " + btoa(opts.basic.user + ":" + opts.basic.pass);
+  }
+  if (opts.body !== undefined && opts.body !== null) {
+    init.body = opts.body;
+    hdrs["Content-Type"] = opts.type || "application/octet-stream";
+  }
+  init.headers = hdrs;
+
+  var t0 = Date.now();
+  var ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
+  if (ctl) init.signal = ctl.signal;
+
+  return fetch(path, init).then(function (res) {
+    clearTimeout(timer);
+    return res.text().then(function (txt) {
+      var data = null;
+      try { data = JSON.parse(txt); } catch (e) { data = null; }
+      if (res.status === 200 || res.status === 201) markLive();
+      else if (res.status >= 500) markLive();      // service answered, just badly
+      else if (res.status === 401) markLive();     // service answered, refused us
+      return {
+        ok: res.ok, status: res.status, data: data, text: txt,
+        token: res.headers.get("X-Session-Token"),
+        retryAfter: res.headers.get("Retry-After"),
+        ms: Date.now() - t0
+      };
+    }, function () {
+      clearTimeout(timer);
+      return { ok: false, status: 0, data: null, text: "",
+               token: null, retryAfter: null, ms: Date.now() - t0, transport: true };
+    });
+  }, function (err) {
+    clearTimeout(timer);
+    markDown();
+    return { ok: false, status: 0, data: null, text: "",
+             token: null, retryAfter: null, ms: Date.now() - t0,
+             transport: true, error: String(err && err.message || err) };
+  });
+}
+function markLive() { state.live = true; state.lastOkAt = Date.now(); paintTop(); }
+function markDown() { state.live = false; paintTop(); }
+
+function errText(r, what) {
+  if (r.transport) return what + " could not reach the service (" + (r.error || "network error") + ").";
+  var d = (r.data && typeof r.data === "object") ? r.data : null;
+  if (d && d.message) return String(d.message);
+  if (d && d.error) return String(d.error);
+  return what + " failed with HTTP " + r.status;
+}
+
+/* ---- real, non-simulated event log ---- */
+function pushEvent(sev, what, detail, status) {
+  state.events.unshift({
+    t: new Date().toISOString().slice(11, 19),
+    sev: sev, what: what, detail: detail || "", status: status === undefined ? "" : String(status)
+  });
+  if (state.events.length > 60) state.events.length = 60;
+  if (state.route.name === "command-center") paintEvents();
+}
+function sevForBand(band) {
+  switch (String(band || "").toUpperCase()) {
+    case "CRITICAL": return "CRITICAL";
+    case "HIGH": return "HIGH";
+    case "MEDIUM": return "MEDIUM";
+    case "LOW": return "LOW";
+    default: return "INFO";
+  }
+}
+
+/* ======================================================================
+   4. DATA REFRESH — the only sources of dashboard truth
+   ====================================================================== */
+function refreshAudit() {
+  return api("/api/audit/verify").then(function (r) {
+    if (r.ok && obj(r.data)) { state.audit = r.data; state.counters.verifies++; }
+    else { state.audit = null; }
+    paintTop();
+    return r;
+  });
+}
+function refreshCases() {
+  return api("/api/cases?page=1&pageSize=" + PAGE_SIZE).then(function (r) {
+    if (r.ok && obj(r.data)) { state.cases = r.data; return r; }
+    state.cases = null;
+    return r;
+  });
+}
+function refreshAll() {
+  return Promise.all([refreshAudit(), refreshCases()]).then(function () {
+    paintTop();
+  });
+}
+
+/* Derived console facts. Each one names the backend field it came from. */
+function facts() {
+  var a = state.audit, c = state.cases;
+  var f = {
+    auditKnown: !!a, casesKnown: !!c,
+    records: a ? a.records : null,
+    assurance: a ? a.assurance : null,
+    chainIntact: a ? a.chainIntact : null,
+    sigConfigured: a ? a.signatureConfigured : null,
+    lastSignedIndex: a ? a.lastSignedIndex : null,
+    lastSignatureValid: a ? !!a.lastSignatureValid : null,
+    headSignatureValid: a ? !!a.headSignatureValid : null,
+    signEveryN: a ? a.signEveryN : null,
+    headHash: a ? a.headHash : null,
+    reason: a ? a.reason : null,
+    totalCases: c ? c.total : null,
+    cases: c ? lst(c.cases) : [],
+    analyzedThisSession: state.counters.analyzed
+  };
+  var hi = 0, open = 0, iocs = 0, maxRisk = null;
+  if (c) {
+    lst(c.cases).forEach(function (k) {
+      var b = String(k.band || "").toUpperCase();
+      if (b === "HIGH" || b === "CRITICAL") hi++;
+      if (String(k.status || "") === "open") open++;
+      iocs += lst(k.hopAddresses).length + lst(k.urls).length + lst(k.attachmentHashes).length;
+      var r = typeof k.riskFinal === "number" ? k.riskFinal : k.risk;
+      if (typeof r === "number" && (maxRisk === null || r > maxRisk)) maxRisk = r;
+    });
+  }
+  f.highRisk = c ? hi : null;
+  f.openCases = c ? open : null;
+  f.iocs = c ? iocs : null;
+  f.maxRisk = maxRisk;
+
+  /* Engines are real only if this build actually contains them and the last
+     real analysis exercised them. Nothing is assumed "online". */
+  var m = state.analysis ? obj(state.analysis.model) : null;
+  f.engines = [];
+  f.engines.push({
+    name: "MIME / HEADER PARSER", state: state.analysis ? "on" : "idle",
+    on: !!state.analysis,
+    d: state.analysis ? ("parsed " + num(obj(state.analysis.parsed).hops, 0) + " hops, " +
+        num(obj(state.analysis.parsed).parts, 0) + " parts")
+      : "local engine, idle until an analysis runs"
+  });
+  f.engines.push({
+    name: "RISK MODEL", state: m ? "on" : "idle", on: !!m,
+    d: m ? (String(m.modelVersion) + " · " + String(m.weightsSource))
+         : "local model, not yet exercised in this session"
+  });
+  f.engines.push({
+    name: "ATTRIBUTION", state: state.analysis ? "on" : "idle", on: !!state.analysis,
+    d: state.analysis ? ("confidence " + String(obj(state.analysis.attribution).confidence ?
+        obj(state.analysis.attribution).confidence.band : UNKNOWN)) : "local engine, idle"
+  });
+  f.engines.push({
+    name: "CORRELATION", state: state.analysis ? "on" : "idle", on: !!state.analysis,
+    d: state.analysis ? (num(obj(state.analysis.correlation).documentsConsidered, 0) + " documents considered")
+         : "local engine, idle"
+  });
+  f.engines.push({
+    name: "AUDIT SIGNER", state: f.sigConfigured ? "on" : "cfg",
+    on: !!f.sigConfigured,
+    d: f.sigConfigured
+        ? ("ed25519 key configured · checkpoint every " + count(f.signEveryN) + " records")
+        : "no signing key in this data directory"
+  });
+  f.enrichmentKnown = state.analysis ? (obj(state.analysis.attribution).enrichment !== undefined) : false;
+  f.enrichmentPresent = state.analysis ? !!obj(state.analysis.attribution).enrichment : false;
+  f.enginesOnline = f.engines.filter(function (x) { return x.on; }).length;
+  f.enginesTotal = f.engines.length;
+  return f;
+}
+
+/* Capabilities this build genuinely does not have. Declared once so the posture
+   panel counts them instead of asserting a number, and so the two panels that
+   mention them cannot drift apart. "Not configured" means not compiled in: no
+   resolver, no TLS inspection, no flow source, no account, no feed, no stream. */
+var NOT_CONFIGURED = [
+  { id: "spam", name: "Spam filter", why: "no reputation feed is compiled into this build" },
+  { id: "dns", name: "DNS security", why: "no resolver integration; header parsing only" },
+  { id: "tls", name: "SSL / TLS", why: "no certificate inspection is performed" },
+  { id: "ddos", name: "DDoS analytics", why: "no network flow source is connected" },
+  { id: "cf", name: "Cloudflare", why: "no Cloudflare account is configured" },
+  { id: "ti", name: "Threat intelligence", why: "no external reputation feed provider" },
+  { id: "enrich", name: "Infrastructure enrichment", why: "no geo, ASN, RDAP or WHOIS provider" },
+  { id: "stream", name: "Live event stream", why: "no streaming or WebSocket endpoint exists" }
+];
+
+/* Posture is a CONSOLE rollup of named backend fields, never a backend score.
+   The inputs are printed in the panel so the arithmetic is auditable. */
+function posture(f) {
+  if (!f.casesKnown) return { known: false };
+  var inputs = [];
+  var score = 0, basis = 0;
+  var mr = f.maxRisk;
+  if (typeof mr === "number") {
+    var w = 50;
+    inputs.push({ k: "max stored case riskFinal", v: num(mr, 2) + " / 100", w: w });
+    score += Math.max(0, Math.min(100, mr)) * (w / 100);
+    basis += w;
+  }
+  if (f.auditKnown) {
+    var asr = String(f.assurance || "");
+    var av = asr === "SIGNED" ? 0 : asr === "UNSIGNED" ? 35 : asr === "TAMPERED" ? 100 : null;
+    if (av !== null) {
+      var w2 = 30;
+      inputs.push({ k: "audit assurance = " + asr, v: av + " / 100", w: w2 });
+      score += av * (w2 / 100);
+      basis += w2;
+    }
+  }
+  if (f.casesKnown) {
+    var w3 = 20;
+    var op = f.openCases;
+    inputs.push({ k: "open cases", v: count(op), w: w3 });
+    score += Math.max(0, Math.min(20, op || 0)) * (w3 / 20);
+    basis += w3;
+  }
+  if (basis === 0) return { known: false };
+  var val = score / basis;
+  var band = val >= 70 ? "CRITICAL" : val >= 45 ? "ELEVATED" : val >= 20 ? "GUARDED" : "BASELINE";
+  return { known: true, value: val, band: band, inputs: inputs };
+}
+
+/* ======================================================================
+   5. NAVIGATION
+   Modules that do not exist in this build are listed, and marked. They
+   resolve to a panel that says so. There are no dead links.
+   ====================================================================== */
+var NAV = [
+  { sect: "Operations", items: [
+    { id: "command-center", ic: "▦", lb: "Command Center" },
+    { id: "workspace", ic: "▤", lb: "Unified Workspace" },
+    { id: "analysis", ic: "✉", lb: "Email Analysis" },
+    { id: "toolkit", ic: "⌗", lb: "Forensic Toolkit" },
+    { id: "cases", ic: "◫", lb: "Cases" },
+    { id: "incidents", ic: "⚑", lb: "Incidents" }
+  ]},
+{ sect: "SOC Modules", items: [
+    { id: "mod-spam", ic: "?", lb: "Spam Analysis", cfg: true },
+    { id: "mod-dns", ic: "?", lb: "DNS Security", cfg: true },
+    { id: "mod-tls", ic: "?", lb: "SSL / TLS", cfg: true },
+    { id: "mod-ddos", ic: "?", lb: "DDoS Analytics", cfg: true },
+    { id: "mod-cf", ic: "?", lb: "Cloudflare", cfg: true },
+    { id: "ioc", ic: "?", lb: "IOC Explorer", real: true }
+  ]},
+  { sect: "Intelligence", items: [
+    { id: "mod-ti", ic: "◈", lb: "Threat Intelligence", cfg: true },
+    { id: "reports", ic: "▥", lb: "Reports", real: true }
+  ]},
+  { sect: "Platform", items: [
+    { id: "audit", ic: "⛓", lb: "Audit", real: true },
+    { id: "settings", ic: "⚙", lb: "Settings", real: true }
+  ]}
+];
+var TITLES = {
+  "command-center": ["Command center", "Security operations"],
+  "workspace": ["Unified workspace", "Security operations"],
+  "analysis": ["Email analysis", "Forensic analysis"],
+  "toolkit": ["Forensic toolkit", "Forensic analysis"],
+  "cases": ["Cases", "Command center"],
+  "incidents": ["Incidents", "Command center"],
+  "ioc": ["IOC explorer", "SOC modules"],
+  "reports": ["Reports", "Intelligence"],
+  "audit": ["Audit", "Platform"],
+  "settings": ["Settings", "Platform"],
+  "case": ["Case investigation", "Forensic analysis"],
+  "module": ["Module", "Security modules"]
+};
+function navFor(id) {
+  for (var i = 0; i < NAV.length; i++)
+    for (var j = 0; j < NAV[i].items.length; j++)
+      if (NAV[i].items[j].id === id) return NAV[i].items[j];
+  return null;
+}
+function buildNav() {
+  var host = clear(document.getElementById("nav"));
+  NAV.forEach(function (sec) {
+    host.appendChild(h("div", { "class": "nav-sect" }, h("span", { text: sec.sect })));
+    sec.items.forEach(function (it) {
+      var row = h("div", {
+        "class": "nav-i", id: "nav-" + it.id, tabindex: "0", role: "button",
+        title: it.cfg ? (it.lb + " — not configured in this build") : it.lb
+      },
+        h("span", { "class": "ic", text: it.ic, "aria-hidden": "true" }),
+        h("span", { "class": "lb", text: it.lb })
+      );
+      if (it.cfg) row.appendChild(h("span", { "class": "tg", text: "N/C" }));
+      function go() { location.hash = "#/" + it.id; }
+      row.addEventListener("click", go);
+      row.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+      host.appendChild(row);
+    });
+  });
+}
+function paintNav() {
+  var cur = state.route.name === "case" ? "cases" : state.route.name;
+  for (var i = 0; i < NAV.length; i++) {
+    NAV[i].items.forEach(function (it) {
+      var el = document.getElementById("nav-" + it.id);
+      if (!el) return;
+      var on = it.id === cur;
+      el.className = "nav-i" + (on ? " on" : "");
+      el.setAttribute("aria-current", on ? "page" : "false");
+    });
+  }
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("scrim").classList.remove("on");
+}
+function paintCrumb() {
+  var t = TITLES[state.route.name] || ["CIPHER SQUAD", ""];
+  var l1 = t[0], l2 = state.route.arg ? trunc(state.route.arg, 46) : t[1];
+  clear(document.getElementById("crumb")).appendChild(h("div", { "class": "top-r" },
+    h("b", { text: l1 }),
+    h("span", { "class": "sep", text: "/" }),
+    h("span", { text: l2 })
+  ));
+}
+function paintTop() {
+  var f = facts();
+  var lp = document.getElementById("livePill");
+  clear(lp);
+  lp.className = "pill " + (state.live ? "p-green p-live" : "p-red");
+  lp.appendChild(h("span", { "class": "dot" }));
+  lp.appendChild(document.createTextNode(state.live ? "Live" : "Offline"));
+
+  var pp = document.getElementById("postPill");
+  clear(pp);
+  var po = posture(f);
+  var cls = !po.known ? "p-gray" :
+            po.band === "CRITICAL" ? "p-red" :
+            po.band === "ELEVATED" ? "p-accent" :
+            po.band === "GUARDED" ? "p-amber" : "p-green";
+  pp.className = "pill " + cls;
+  pp.appendChild(h("span", { "class": "dot" }));
+  pp.appendChild(document.createTextNode(po.known ? ("Posture " + po.band) : "Posture " + UNKNOWN));
+
+  var av = document.querySelector("#who .av");
+  if (av) av.textContent = state.user ? state.user.slice(0, 2) : "–";
+  document.getElementById("whoNm").textContent = state.user || "Signed out";
+  document.getElementById("whoRl").textContent = state.roles.length ? state.roles.join(" / ") : "No session";
+  document.getElementById("btnOut").disabled = !state.token;
+}
+function paintEvents() {
+  var host = document.getElementById("evList");
+  if (!host) return;
+  clear(host);
+  if (!state.events.length) {
+    host.appendChild(h("div", { "class": "empty" },
+      h("b", { text: "No live events" }),
+      h("div", { text: "This build exposes no event stream endpoint. Entries below appear only as real requests this console completes against the backend." })
+    ));
+    return;
+  }
+  state.events.forEach(function (e, i) {
+    host.appendChild(h("div", { "class": "ev" + (i === 0 ? " enter" : "") },
+      h("span", { "class": "ev-t", text: e.t }),
+      h("span", { "class": "ev-s sev-" + e.sev, text: e.sev }),
+      h("span", { "class": "ev-d" },
+        h("b", { text: e.what }), e.detail ? document.createTextNode(" — " + e.detail) : null),
+      h("span", { "class": "ev-x", text: e.status })
+    ));
+  });
+}
+
+/* ======================================================================
+   6. SMALL BUILDERS
+   ====================================================================== */
+function panel(title, body, act) {
+  var p = h("div", { "class": "panel" });
+  p.appendChild(h("div", { "class": "ph-2" },
+    h("h2", null, h("span", { "class": "bar", "aria-hidden": "true" }), title),
+    act ? h("div", { "class": "act" }, act) : null));
+  p.appendChild(h("div", { "class": "pb" }, body));
+  return p;
+}
+function panelTight(title, body, act) {
+  var p = h("div", { "class": "panel" });
+  p.appendChild(h("div", { "class": "ph-2" },
+    h("h2", null, h("span", { "class": "bar", "aria-hidden": "true" }), title),
+    act ? h("div", { "class": "act" }, act) : null));
+  p.appendChild(body);
+  return p;
+}
+function kv(pairs) {
+  var d = h("dl", { "class": "kv" });
+  pairs.forEach(function (p) {
+    if (p[1] === null) return;
+    d.appendChild(h("dt", { text: p[0] }));
+    var dd = h("dd");
+    if (p[2] === "mono") dd.appendChild(h("code", { text: s(p[1]) }));
+    else if (typeof p[1] === "object") dd.appendChild(p[1]);
+    else dd.appendChild(document.createTextNode(s(p[1])));
+    d.appendChild(dd);
+  });
+  return d;
+}
+function metric(label, value, foot, tone, unknown) {
+  return h("div", { "class": "mc " + (tone || "y") },
+    h("div", { "class": "mc-l" }, h("span", { text: label })),
+    h("div", { "class": "mc-v" + (unknown ? " unknown" : ""), text: value }),
+    h("div", { "class": "mc-f", text: foot })
+  );
+}
+function table(cols, rows, emptyMsg, cls) {
+  if (!rows.length) {
+    return h("div", { "class": "empty" },
+      h("b", { text: (emptyMsg && emptyMsg[0]) || NODATA }),
+      h("div", { text: (emptyMsg && emptyMsg[1]) || "The backend returned an empty collection." }));
+  }
+  var tb = h("tbody");
+  rows.forEach(function (r) { tb.appendChild(h("tr", r.attrs || null, r.cells)); });
+  return h("div", { "class": "twrap " + (cls || "") },
+    h("table", { "class": "t" },
+      h("thead", null, h("tr", null, cols.map(function (c) { return h("th", { text: c }); }))),
+      tb));
+}
+/** Meter drawn with an SVG geometry attribute — CSP forbids inline styles. */
+function meter(frac, tone) {
+  var w = 100;
+  var f = typeof frac === "number" && isFinite(frac) ? Math.max(0, Math.min(1, frac)) : 0;
+  /* Same reason as sweepDash: a fresh rect already at its final width never
+     transitions, so it is created empty and widened on the next frame. */
+  var fill = sv("rect", { "class": "fl f-" + (tone || "gray"), x: 0, y: 0, width: 0, height: 6, rx: 1 });
+  var svg = sv("svg", { "class": "meter", viewBox: "0 0 100 6", preserveAspectRatio: "none", "aria-hidden": "true" },
+    sv("rect", { "class": "tr", x: 0, y: 0, width: w, height: 6, rx: 1 }),
+    fill
+  );
+  growWidth(fill, w * f);
+  return svg;
+}
+function toneForBand(b) {
+  switch (String(b || "").toUpperCase()) {
+    case "CRITICAL": return "red"; case "HIGH": return "accent";
+    case "MEDIUM": return "amber"; case "LOW": return "green"; default: return "gray";
+  }
+}
+function bandPill(b) {
+  return h("span", { "class": "pill p-" + toneForBand(b), text: String(b || UNKNOWN) });
+}
+/** Circular gauge. Animated by stroke-dashoffset transition only. */
+/* Motion helpers.
+   A newly created element that already carries its final stroke-dashoffset has
+   nothing to transition from, so the stylesheet transition never runs. These
+   helpers write the empty state first and the real value on the next animation
+   frame; the duration and easing live in CSS, not in inline styles, because
+   inline style assignments are banned in this build.
+   When the viewer has asked for reduced motion the final value is applied
+   immediately and no frame is scheduled. */
+var reduceMotion = false;
+try {
+  reduceMotion = typeof matchMedia === "function" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches === true;
+} catch (e) { reduceMotion = false; }
+
+function canAnimate() {
+  return !reduceMotion && typeof requestAnimationFrame === "function";
+}
+/* `full` is the fully hidden dash offset (the empty state), `target` the
+   offset that reveals the stroke. The transition itself comes from
+   .gauge .fg / .ring circle in the stylesheet. */
+function sweepDash(el, full, target) {
+  if (!el || typeof el.setAttribute !== "function") return;
+  el.setAttribute("stroke-dashoffset", full.toFixed(2));
+  if (!canAnimate()) { el.setAttribute("stroke-dashoffset", target.toFixed(2)); return; }
+  requestAnimationFrame(function () {
+    el.setAttribute("stroke-dashoffset", target.toFixed(2));
+  });
+}
+/* Width counterpart of sweepDash, for the family-contribution bars.
+   .meter .fl carries the 700ms width transition. */
+function growWidth(el, target) {
+  if (!el || typeof el.setAttribute !== "function") return;
+  el.setAttribute("width", "0");
+  if (!canAnimate()) { el.setAttribute("width", target.toFixed(2)); return; }
+  requestAnimationFrame(function () {
+    el.setAttribute("width", target.toFixed(2));
+  });
+}
+/* Stagger graph nodes in as a traversal. Nodes are rebuilt every render, so a
+   transition alone would never fire for them; they run a one-shot keyframe
+   animation instead, with the delay carried by a class so no inline style is
+   needed. The delay classes wrap at 10 so a large graph cannot take seconds to
+   finish appearing. */
+function settleIn(nodes) {
+  if (!nodes || !nodes.length) return;
+  var i = 0;
+  nodes.forEach(function (n) {
+    if (!n || typeof n.classList === "undefined") return;
+    n.classList.add("gin");
+    n.classList.add("gd" + (i % 10));
+    i++;
+  });
+}
+function gauge(value, max, tone, caption, sub) {
+  var r = 52, C = 2 * Math.PI * r;
+  var frac = (typeof value === "number" && isFinite(value)) ? Math.max(0, Math.min(1, value / max)) : 0;
+  var g = sv("svg", { "class": "gauge", viewBox: "0 0 140 92", role: "img",
+                      "aria-label": (caption || "Value") + " " + (typeof value === "number" ? value : UNKNOWN) + " of " + max });
+  g.appendChild(sv("path", { "class": "bg", d: arcPath(70, 74, r, 180, 0), fill: "none", "stroke-width": 9, "stroke-linecap": "round" }));
+  /* s- not f-: this arc is stroked, and the .f- family only sets fill. */
+  var gArc = sv("path", {
+    "class": "fg s-" + (tone || "gray"), d: arcPath(70, 74, r, 180, 180 - 180 * frac),
+    fill: "none", "stroke-width": 9, "stroke-linecap": "round",
+    "stroke-dasharray": C.toFixed(2), "stroke-dashoffset": C.toFixed(2)
+  });
+  g.appendChild(gArc);
+  g.appendChild(sv("text", { "class": "num", x: 70, y: 68, "text-anchor": "middle", text: typeof value === "number" ? String(value) : UNKNOWN }));
+  g.appendChild(sv("text", { "class": "cap", x: 70, y: 83, "text-anchor": "middle", text: sub || ("/ " + max) }));
+  if (caption) g.appendChild(sv("text", { "class": "cap", x: 70, y: 12, "text-anchor": "middle", text: caption }));
+  /* The gauge has no user state of its own to animate from, so it animates from
+     empty to its current value every time it is rendered. */
+  sweepDash(gArc, C, C * (1 - frac), 800);
+  return g;
+}
+function arcPath(cx, cy, r, a0, a1) {
+  var p0 = polar(cx, cy, r, a0), p1 = polar(cx, cy, r, a1);
+  var large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  return "M " + p0.x.toFixed(2) + " " + p0.y.toFixed(2) +
+         " A " + r + " " + r + " 0 " + large + " 1 " + p1.x.toFixed(2) + " " + p1.y.toFixed(2);
+}
+function polar(cx, cy, r, deg) {
+  var a = (deg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+function riskRing(value, max, tone, capText) {
+  var r = 40, C = 2 * Math.PI * r;
+  var frac = (typeof value === "number" && isFinite(value)) ? Math.max(0, Math.min(1, value / max)) : 0;
+  var g = sv("svg", { "class": "ring", viewBox: "0 0 100 100", width: 100, height: 100, role: "img",
+                      "aria-label": "Risk " + (typeof value === "number" ? value : UNKNOWN) + " of " + max });
+  g.appendChild(sv("circle", { "class": "trk", cx: 50, cy: 50, r: r, fill: "none", "stroke-width": 8 }));
+  /* s- not f-: this ring is stroked, and the .f- family only sets fill. */
+  var ring = sv("circle", {
+    "class": "s-" + (tone || "gray"), cx: 50, cy: 50, r: r, fill: "none", "stroke-width": 8,
+    "stroke-linecap": "round", transform: "rotate(-90 50 50)",
+    "stroke-dasharray": C.toFixed(2), "stroke-dashoffset": C.toFixed(2)
+  });
+  g.appendChild(ring);
+  g.appendChild(sv("text", { "class": "val", x: 50, y: 50, "text-anchor": "middle",
+                             "dominant-baseline": "central",
+                             text: typeof value === "number" ? String(value) : "—" }));
+  g.appendChild(sv("text", { "class": "max", x: 50, y: 66, "text-anchor": "middle", text: "of " + max }));
+  if (capText) g.appendChild(sv("text", { "class": "cap", x: 50, y: 82, "text-anchor": "middle", text: capText }));
+  sweepDash(ring, C, C * (1 - frac), 900);
+  return g;
+}
+function note(text, kind) {
+  return h("div", { "class": "note" + (kind ? " " + kind : ""), text: text });
+}
+function notCfg(what, why) {
+  return h("div", { "class": "note nc" },
+    h("b", { text: what + " " + NOCFG }),
+    h("div", { text: why }));
+}
+function sectionNo(n, label, body) {
+  var w = h("div", { "class": "panel" });
+  w.appendChild(h("div", { "class": "ph-2" },
+    h("h2", null, h("span", { "class": "bar", "aria-hidden": "true" }),
+      h("span", { text: n + ".  " + label }))));
+  w.appendChild(h("div", { "class": "pb" }, body));
+  return w;
+}
+function btn(label, fn, cls, dis) {
+  var b = h("button", { "class": "btn " + (cls || ""), type: "button" }, label);
+  if (dis) b.disabled = true;
+  else b.addEventListener("click", fn);
+  return b;
+}
+function repHead(n, label) {
+  return h("div", { "class": "rep-h" },
+    h("span", { "class": "no", text: String(n) }), h("b", { text: label }));
+}
+
+/* ======================================================================
+   7. PAGE — SOC COMMAND CENTER
+   ====================================================================== */
+function pageCommandCenter() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Security Operations Center" }),
+        h("div", { "class": "sub", text: state.user
+          ? ("Signed in as " + state.user + ". Every figure below is read from the local analysis service over loopback.")
+          : "Not signed in. Values requiring an authenticated session show " + UNKNOWN + " until you sign in." })
+      ),
+      h("div", { "class": "top-r" },
+        f.auditKnown ? h("span", { "class": "pill p-" + (f.assurance === "SIGNED" ? "green" :
+          f.assurance === "UNSIGNED" ? "amber" : f.assurance === "EMPTY" ? "gray" : "red"),
+          text: "Audit " + f.assurance }) : h("span", { "class": "pill p-gray", text: "Audit " + UNKNOWN }),
+        btn("Refresh", route, "", false)
+      ))));
+
+  /* ---- module status strip ---- */
+  var strip = h("div", { "class": "panel" }, h("div", { "class": "ph-2" },
+    h("h2", null, h("span", { "class": "bar", "aria-hidden": "true" }), "Alert feed · module readiness")));
+  var srow = h("div", { "class": "pb" },
+    h("div", { "class": "mods" },
+      modChip("CREDENTIALS", state.token ? "on" : "cfg",
+              state.token ? ("session active as " + state.user) : "no session — sign in required"),
+      modChip("AUDIT CHAIN", !f.auditKnown ? "off" :
+              (f.chainIntact ? (f.sigConfigured ? "on" : "warn") : "warn"),
+              !f.auditKnown ? UNKNOWN :
+              (f.chainIntact ? ("intact · " + f.assurance) : "chain does not reconcile")),
+      modChip("RISK MODEL", state.analysis ? "on" : "cfg",
+              state.analysis ? String(obj(state.analysis.model).modelVersion) : "local, not yet exercised"),
+      modChip("IOC EXTRACTION", !f.casesKnown ? "off" : (f.iocs ? "on" : "warn"),
+              !f.casesKnown ? UNKNOWN : (f.iocs ? (f.iocs + " indicators in stored cases") : "no indicators extracted")),
+      modChip("ENRICHMENT", f.enrichmentPresent ? "on" : "cfg",
+              f.enrichmentPresent ? "provider returned data" : "no provider configured"),
+      modChip("THREAT INTEL", "cfg", "no feed provider in this build"),
+      modChip("DNS SECURITY", "cfg", "no resolver integration"),
+      modChip("SSL / TLS", "cfg", "no TLS inspection"),
+      modChip("DDoS ANALYTICS", "cfg", "no flow source"),
+      modChip("CLOUDFLARE", "cfg", "no account integration"),
+      modChip("SPAM FILTER", "cfg", "no reputation feed"),
+      modChip("EVENT STREAM", "off", "no streaming endpoint exists")
+    ));
+  strip.appendChild(srow);
+  view.appendChild(strip);
+
+  /* ---- metric cards ---- */
+  var mcards = h("div", { "class": "g5" });
+  mcards.appendChild(metric("Emails analyzed",
+    String(f.analyzedThisSession), "analyses run in this session", "b", false));
+  mcards.appendChild(metric("High-risk / malicious",
+    f.highRisk === null ? UNKNOWN : String(f.highRisk),
+    f.casesKnown ? "stored cases with band HIGH or CRITICAL" : "requires session",
+    f.highRisk === null ? "y" : (f.highRisk ? "r" : "g"), f.highRisk === null));
+  mcards.appendChild(metric("Open cases",
+    f.openCases === null ? UNKNOWN : String(f.openCases),
+    f.casesKnown ? "of " + count(f.totalCases) + " stored" : "requires session",
+    f.openCases === null ? "y" : (f.openCases ? "a" : "g"), f.openCases === null));
+  mcards.appendChild(metric("Engines online",
+    f.auditKnown || f.casesKnown || state.analysis ? (f.enginesOnline + " / " + f.enginesTotal) : UNKNOWN,
+    "local engines actually present and exercised", "g",
+    !(f.auditKnown || f.casesKnown || state.analysis)));
+  mcards.appendChild(metric("Active IOCs",
+    f.iocs === null ? UNKNOWN : String(f.iocs),
+    f.casesKnown ? "IPs, URLs and hashes in stored cases" : "requires session",
+    f.iocs === null ? "y" : (f.iocs ? "a" : "g"), f.iocs === null));
+  view.appendChild(h("div", { "class": "panel" }, mcards));
+
+  /* ---- threat board + posture ---- */
+  var left = h("div", null);
+  left.appendChild(panel("Threat level board", h("div", { "class": "mods" },
+    f.engines.map(function (e) {
+      return h("div", { "class": "mod " + (e.on ? "on" : "off") },
+        h("div", { "class": "mod-h" },
+          h("span", { "class": "dot" , "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: e.name }),
+          h("span", { "class": "mod-s", text: e.on ? "On" : (e.state === "cfg" ? NOCFG : "Idle") })),
+        h("div", { "class": "mod-d", text: e.d }));
+    }).concat([
+      h("div", { "class": "mod off" },
+        h("div", { "class": "mod-h" }, h("span", { "class": "dot", "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: "SPAM" }),
+          h("span", { "class": "mod-s", text: NOCFG })),
+        h("div", { "class": "mod-d", text: "no reputation feed is compiled into this build" })),
+      h("div", { "class": "mod off" },
+        h("div", { "class": "mod-h" }, h("span", { "class": "dot", "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: "DNS SECURITY" }),
+          h("span", { "class": "mod-s", text: NOCFG })),
+        h("div", { "class": "mod-d", text: "no resolver integration; header parsing only" })),
+      h("div", { "class": "mod off" },
+        h("div", { "class": "mod-h" }, h("span", { "class": "dot", "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: "SSL / TLS" }),
+          h("span", { "class": "mod-s", text: NOCFG })),
+        h("div", { "class": "mod-d", text: "no certificate inspection is performed" })),
+      h("div", { "class": "mod off" },
+        h("div", { "class": "mod-h" }, h("span", { "class": "dot", "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: "DDOS" }),
+          h("span", { "class": "mod-s", text: NOCFG })),
+        h("div", { "class": "mod-d", text: "no network flow source is connected" })),
+      h("div", { "class": "mod off" },
+        h("div", { "class": "mod-h" }, h("span", { "class": "dot", "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: "CLOUDFLARE" }),
+          h("span", { "class": "mod-s", text: NOCFG })),
+        h("div", { "class": "mod-d", text: "no Cloudflare account is configured" })),
+      h("div", { "class": "mod off" },
+        h("div", { "class": "mod-h" }, h("span", { "class": "dot", "aria-hidden": "true" }),
+          h("span", { "class": "mod-n", text: "IOC" }),
+          h("span", { "class": "mod-s", text: f.casesKnown ? (f.iocs ? "On" : "Idle") : UNKNOWN })),
+        h("div", { "class": "mod-d", text: f.casesKnown
+          ? (f.iocs ? (f.iocs + " indicators across stored cases") : "no indicators extracted from stored cases")
+: "requires a signed-in session" }))
+    ]))));
+
+  var po = posture(f);
+  var right = panel("Overall posture",
+    h("div", null,
+      h("div", null,
+        po.known ? gauge(Math.round(po.value), 100,
+              po.band === "CRITICAL" ? "red" : po.band === "ELEVATED" ? "accent" :
+              po.band === "GUARDED" ? "amber" : "green", "Current threat level")
+                : gauge(null, 100, "gray", "Current threat level")),
+      h("div", { "class": "note" },
+        h("b", { text: "Derived by this console from named backend fields. Not a backend score." }),
+        h("div", { text: po.known
+          ? "Weighted rollup: 50% max stored case riskFinal, 30% audit assurance, 20% open-case count."
+          : "Inputs are unknown because no authenticated session has returned case or audit data yet." })),
+      h("div", { "class": "kbwrap" }, kv([
+        ["Band", po.known ? po.band : UNKNOWN],
+        ["Engine readiness", f.casesKnown || f.auditKnown ? (f.enginesOnline + " / " + f.enginesTotal + " online") : UNKNOWN],
+        ["Not configured", NOT_CONFIGURED.length + " capabilities"],
+        ["Last backend sync", state.lastOkAt ? (new Date(state.lastOkAt).toISOString().slice(11, 19) + "Z") : UNKNOWN]
+      ])),
+po.known && po.inputs.length ? h("div", { "class": "fam-f" },
+        "Inputs: " + po.inputs.map(function (i) { return i.k + " = " + i.v + " (weight " + i.w + ")"; }).join(" · ")) : null
+    ));
+  view.appendChild(h("div", { "class": "split" }, left, right));
+
+  /* ---- event stream + live detections ---- */
+  var evBox = h("div", { "id": "evList" });
+  var leftCol = panelTight("Live event stream", evBox,
+    h("span", { "class": "pill p-gray", text: state.events.length + " in session" }));
+  paintEvents();
+
+  var rows = f.cases.map(function (k) {
+    return {
+      attrs: { "class": "clickable", tabindex: "0", "data-case": k.id },
+      cells: [
+        h("td", { "class": "mono", text: k.observedAt >= 0 ? when(k.observedAt) : UNKNOWN }),
+        h("td", { "class": "mono" }, h("a", { href: "#/case/" + encodeURIComponent(k.id), text: trunc(k.id, 20) })),
+        h("td", null, bandPill(k.band)),
+        h("td", { "class": "num", text: num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 2) }),
+        h("td", { "class": "num", text: pct(k.confidence) }),
+        h("td", { text: trunc(k.verdict || UNKNOWN, 46) })
+      ]
+    };
+  });
+  var det = panelTight("Live detections",
+    table(["Observed", "Case", "Classification", "Risk", "Confidence", "Primary finding"], rows,
+      ["No open cases", "The backend has not returned any stored cases."]),
+    btn("Open cases", function () { location.hash = "#/cases"; }, "sm"));
+  var rightCol = det;
+
+  view.appendChild(h("div", { "class": "g2" }, leftCol, rightCol));
+}
+
+function modChip(name, st, desc) {
+  var cls = st === "on" ? "on" : st === "warn" ? "warn" : "off";
+  var label = st === "on" ? "On" : st === "warn" ? "Attention" : (st === "idle" ? "Idle" : NOCFG);
+  return h("div", { "class": "mod " + cls },
+    h("div", { "class": "mod-h" },
+      h("span", { "class": "dot", "aria-hidden": "true" }),
+      h("span", { "class": "mod-n", text: name }),
+      h("span", { "class": "mod-s", text: label })),
+    h("div", { "class": "mod-d", text: desc }));
+}
+
+/* ======================================================================
+   8. PAGE — FORENSIC EMAIL ANALYSIS
+   ====================================================================== */
+function pageAnalysis() {
+  var view = clear(document.getElementById("view"));
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Forensic email analysis" }),
+        h("div", { "class": "sub", text: "Paste an email or load an EML and analyze headers, authentication, routing, URLs, attachments, extracted indicators and NLP evidence. Every value shown is returned by the local engine." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-blue" }, h("span", { "class": "dot" }), "Local engine"),
+        state.token ? null : h("span", { "class": "pill p-amber", text: "Sign in required" })))));
+
+  var left = h("div", null);
+  var ta = h("textarea", { "class": "ta", id: "eml", spellcheck: "false",
+    placeholder: "From: sender@example.com\r\nTo: recipient@example.org\r\nSubject: …\r\n\r\nbody or full MIME message" });
+  ta.value = "";
+
+  var status = h("div", { "class": "note", id: "anStatus", text: state.token
+    ? "Paste a message and run the analysis. Nothing is sent off this machine."
+    : "Sign in on the right to enable analysis." });
+
+  var openCase = h("input", { type: "checkbox", id: "openCase" });
+
+  left.appendChild(panel("Paste email for analysis", h("div", null,
+    h("div", { "class": "note" },
+      "Raw MIME is accepted. The engine caps the body at 2 MB and never executes any part of the message."),
+    h("div", { "class": "g2" },
+      h("div", null, h("div", { "class": "nav-sect" }, h("span", { text: "Message source" })), ta),
+      h("div", null,
+        h("div", { "class": "nav-sect" }, h("span", { text: "Options" })),
+        h("label", { "class": "note" },
+          openCase, document.createTextNode(" Open a case for this message")),
+        h("div", { "class": "g2" },
+          btn("Analyze email", doAnalyze, "pri", !state.token),
+          btn("Clear", function () {
+            ta.value = ""; state.analysis = null;
+            clear(document.getElementById("anReport")).appendChild(reportEmpty());
+            status.textContent = "Cleared. Nothing was sent.";
+          })),
+        h("div", { "class": "note nc" },
+          h("b", { text: "Load demo " + NOCFG }),
+          h("div", { text: "No sample message is bundled, so this button is withheld rather than shipping invented content." }))
+      )),
+    status), null));
+
+  var right = h("div", { "id": "anReport" }, reportEmpty());
+  view.appendChild(h("div", { "class": "ws" }, left, right));
+}
+function reportEmpty() {
+  return h("div", { "class": "empty" },
+    h("b", { text: "No analysis available" }),
+    h("div", { text: "Run an analysis to populate the forensic report. Until then no risk, classification or confidence exists, because none has been computed." }));
+}
+function doAnalyze() {
+  var ta = document.getElementById("eml");
+  var body = ta ? ta.value : "";
+  var st = document.getElementById("anStatus");
+  if (!body || !body.trim()) { if (st) st.textContent = "Nothing to analyze: the input is empty."; return; }
+  if (body.length > MAX_BODY) { if (st) st.textContent = "Input exceeds the 2 MB request limit."; return; }
+  var wantCase = document.getElementById("openCase") && document.getElementById("openCase").checked;
+  var path = "/api/analyze" + (wantCase ? "?openCase=analyst" : "");
+  if (st) { st.textContent = "Analyzing…"; }
+  api(path, { method: "POST", body: body, type: "message/rfc822" }).then(function (r) {
+    if (!r.ok) {
+      if (st) st.textContent = errText(r, "Analysis");
+      pushEvent("HIGH", "analysis failed", "POST /api/analyze", r.status);
+      return;
+    }
+    state.analysis = r.data;
+    state.counters.analyzed++;
+    var m = obj(r.data.model);
+    state.lastAnalysisCorrelation = obj(r.data.correlation);
+    pushEvent(sevForBand(m.band), "email analyzed",
+      "band " + String(m.band) + ", risk " + num(m.riskFinal, 2), "200");
+    if (r.data.caseId) { state.counters.openedCase++; pushEvent("MEDIUM", "case created", r.data.caseId, "201"); }
+    var ind = lst(obj(r.data.attribution).indicators);
+    if (ind.length) { state.counters.iocSeen += ind.length; pushEvent("LOW", "IOC extracted", ind.length + " indicator(s)", "200"); }
+    if (st) st.textContent = "Analysis complete in " + r.ms + " ms.";
+    paintTop();
+    clear(document.getElementById("anReport")).appendChild(reportFor(r.data));
+  });
+}
+
+/* ---- the forensic report ---- */
+function reportFor(a) {
+  var m = obj(a.model), at = obj(a.attribution), co = obj(a.correlation), fb = obj(a.featureBreakdown);
+  var p = obj(a.parsed), fe = obj(a.features);
+  var tone = toneForBand(m.band);
+  var wrap = h("div", null);
+
+  /* header block */
+  var head = h("div", { "class": "panel" }, h("div", { "class": "pb" },
+    h("div", { "class": "top-r" },
+      riskRing(typeof m.riskFinal === "number" ? m.riskFinal : null, 100, tone, String(m.band || UNKNOWN)),
+      h("div", null,
+        h("div", { "class": "rep-h" }, h("span", { "class": "no", text: "R" }),
+          h("b", { text: "Possible risk · backend scored" })),
+        h("div", { "class": "mc-v", text: typeof m.risk === "number" ? num(m.risk, 2) : UNKNOWN }),
+        h("div", { "class": "mc-f", text: "risk (logistic) " + num(m.risk, 2) + " · riskFinal " + num(m.riskFinal, 2) +
+          " · z " + num(fb.z, 3) }),
+        h("div", { "class": "g2" },
+          h("div", { "class": "fam" },
+            h("div", { "class": "fam-h" }, h("span", { "class": "fam-n", text: "Forensic classification" })),
+            h("div", { "class": "fam-v", text: String(m.argmaxClass || UNKNOWN) })),
+          h("div", { "class": "fam" },
+            h("div", { "class": "fam-h" }, h("span", { "class": "fam-n", text: "Verdict" })),
+            h("div", { "class": "fam-v", text: String(m.verdict || UNKNOWN) })),
+          h("div", { "class": "fam" },
+            h("div", { "class": "fam-h" }, h("span", { "class": "fam-n", text: "Confidence (C_model)" })),
+            h("div", { "class": "fam-v", text: num(m.cModel, 4) })),
+          h("div", { "class": "fam" },
+            h("div", { "class": "fam-h" }, h("span", { "class": "fam-n", text: "Data completeness" })),
+            h("div", { "class": "fam-v", text: fe.observed + " / " + fe.total + " features observed" }))))),
+    /* A standing statement, not a runtime echo. This build ships hand-set weights that
+   were never fitted or calibrated, so every score it produces is advisory. If the
+   backend ever reports a fitted model, this line is replaced by what it reports. */
+m.weightsSource || m.trainedOn ? note("Model weights: " + String(m.weightsSource) +
+      " · trained on: " + String(m.trainedOn) + " · version " + String(m.modelVersion) +
+      (String(m.weightsSource) === "FITTED"
+        ? ". This model was fitted, so its confidence has a stated meaning."
+        : ". Weights are HAND_SET_UNCALIBRATED: this is an uncalibrated scoring model, "
+          + "so its output is not a probability of guilt."), "wr") : null,
+    m.caseNotCreated ? note("No case was created: " + String(m.caseNotCreated), "wr") : null
+  ));
+  wrap.appendChild(head);
+
+  /* 1 evidence preservation */
+  wrap.appendChild(sectionNo(1, "Evidence preservation", kv([
+    ["Case id", a.caseId || NODATA, "mono"],
+    ["Document id", a.documentId, "mono"],
+    ["Message id", a.messageId || NODATA, "mono"],
+    ["Subject", a.subject || NODATA],
+    ["From", lst(a.from).length ? lst(a.from) : NODATA],
+    ["To", lst(a.to).length ? lst(a.to) : NODATA],
+    ["Evidence status", a.documentId ? ("PRESERVED · SHA-256 " + String(a.documentId).replace(/^sha256:/, "")) : "FAILED — no document hash returned"],
+    ["Parsed", "hops " + num(p.hops, 0) + " · parts " + num(p.parts, 0) + " · urls " + num(p.urls, 0) +
+      " · warnings " + num(p.warnings, 0) + " · bytes " + num(p.bytesConsumed, 0)],
+    ["Truncated", p.truncated ? "YES" : "NO"]
+  ])));
+
+  /* 2 risk scoring */
+  var fams = h("div", { "class": "g3" });
+  var famList = lst(fb.families);
+  var maxAbs = 0;
+  famList.forEach(function (f) { maxAbs = Math.max(maxAbs, Math.abs(f.contribution)); });
+  famList.forEach(function (f) {
+    var frac = maxAbs > 0 ? (Math.abs(f.contribution) / maxAbs) : 0;
+    fams.appendChild(h("div", { "class": "fam" },
+      h("div", { "class": "fam-h" },
+        h("span", { "class": "fam-n", text: String(f.name) }),
+        h("span", { "class": "fam-v", text: num(f.contribution, 3) })),
+      meter(frac, f.contribution > 0 ? "red" : (f.contribution < 0 ? "green" : "gray")),
+      h("div", { "class": "fam-f", text: "relative to the largest absolute family contribution (" + num(maxAbs, 3) + ")" })));
+  });
+  if (!famList.length) fams.appendChild(h("div", { "class": "empty" }, h("b", { text: NODATA }), "No family breakdown returned."));
+  wrap.appendChild(sectionNo(2, "Risk scoring (weighted evidence)", h("div", null,
+    fams,
+    h("div", { "class": "note" },
+      "Sum of contributions " + num(fb.totalContribution, 4) + " + intercept " + num(fb.intercept, 4) +
+      " = logit " + num(fb.z, 4) + ". Bars show each family's share of the largest absolute contribution. " +
+      "These are not probabilities and do not sum to a statement about intent."))));
+
+  /* 3 detection findings
+     The brief names nine layers. The backend exposes six families whose names do
+     not coincide with those layer labels, so the mapping is declared here rather
+     than guessed by string prefix. A family is rendered under exactly one layer,
+     which is why PAYLOAD (URL and attachment features together) appears once,
+     under URL / ATTACHMENT, and is not also counted as a URL-only family. */
+  var layers = [
+    { id: "AUTHENTICATION", fams: ["AUTH"], desc: "spf, dkim and dmarc as parsed from the message" },
+    { id: "HEADER", fams: [], desc: "raw header field observations",
+      noFam: "The backend has no separate header family. From / Reply-To / Message-ID / Date " +
+             "observations are folded into the ROUTE, IDENT and AUTH families and are shown there." },
+    { id: "ROUTING", fams: ["ROUTE"], desc: "Received chain and relay order" },
+    { id: "IDENTITY", fams: ["IDENT"], desc: "sender domain age, lookalike and registrar evidence" },
+    { id: "NLP / SOCIAL", fams: ["NLP"], desc: "language and pressure cues" },
+    { id: "URL / ATTACHMENT", fams: ["PAYLOAD"], desc: "link, URL and attachment indicators",
+      extra: "The backend groups link and attachment features into one PAYLOAD family, so they are " +
+             "listed together. This console does not re-split them, because the split would have " +
+             "to be invented here." },
+    { id: "INFRASTRUCTURE", fams: ["INFRA"], desc: "observable addresses and their scope" },
+    { id: "THREAT INTELLIGENCE", fams: [], desc: "external reputation feeds",
+      noFam: "The backend exposes no reputation family. INFRA carries the observable address-scope " +
+             "features; anything requiring an external feed is unavailable and is not scored." }
+  ];
+  var perFeat = lst(fb.perFeature);
+  var famOf = {};
+  perFeat.forEach(function (p2) {
+    if (!famOf[p2.family]) famOf[p2.family] = [];
+    famOf[p2.family].push(p2);
+  });
+  /* Guard against a family name the map does not claim, so nothing is silently dropped. */
+  var claimed = {};
+  layers.forEach(function (L) { L.fams.forEach(function (fm) { claimed[fm] = true; }); });
+  var orphans = Object.keys(famOf).filter(function (fm) { return !claimed[fm]; });
+
+  var fbox = h("div", null);
+  layers.forEach(function (L) {
+    var feats = [];
+    L.fams.forEach(function (fm) { feats = feats.concat(famOf[fm] || []); });
+    var box = h("div", { "class": "layer" },
+      h("div", { "class": "layer-h" },
+        h("b", { text: L.id }),
+        h("span", { "class": "n", text: feats.length ? (feats.length + " feature(s)") : "no feature" })),
+      h("div", { "class": "layer-d", text: L.desc }));
+    if (L.noFam) box.appendChild(h("div", { "class": "find" },
+      h("div", { "class": "find-h" }, h("span", { "class": "find-b sev-INFO", text: "NOT A BACKEND FAMILY" })),
+      h("div", { "class": "find-m", text: L.noFam })));
+    if (L.extra) box.appendChild(h("div", { "class": "find-m", text: L.extra }));
+    if (L.id === "INFRASTRUCTURE") {
+      lst(at.candidates).forEach(function (c) {
+        box.appendChild(h("div", { "class": "find" },
+          h("div", { "class": "find-h" },
+            h("span", { "class": "find-b", text: String(c.scope || UNKNOWN) }),
+            h("span", { "class": "pill p-" + (c.scope === "PUBLIC" ? "amber" : "gray"), text: String(c.scope) })),
+          h("div", { "class": "find-t", text: "Observed address " + String(c.ip) + " via " + String(c.source) }),
+          h("div", { "class": "find-m" }, h("span", { "class": "lb", text: "scope" }),
+            document.createTextNode(" " + String(c.scopeDescription || UNKNOWN)))));
+      });
+      if (!lst(at.candidates).length)
+        box.appendChild(h("div", { "class": "find" },
+          h("div", { "class": "find-t", text: NODATA }),
+          h("div", { "class": "find-m", text: "No publicly routable address was observable in this message." })));
+    }
+    if (L.id === "THREAT INTELLIGENCE") {
+      box.appendChild(h("div", { "class": "find" },
+        h("div", { "class": "find-h" }, h("span", { "class": "find-b", text: NOCFG })),
+        h("div", { "class": "find-t", text: "No reputation or threat feed is compiled into this build." }),
+        h("div", { "class": "find-m", text: "Nothing is looked up on the network, so no verdict about an address or domain's known-badness can be offered." })));
+    }
+    feats.forEach(function (f2) {
+      var t = f2.contribution < -0.05 ? "blue" : (f2.contribution > 0.05 ? "red" : "gray");
+      box.appendChild(h("div", { "class": "find" },
+        h("div", { "class": "find-h" },
+          h("span", { "class": "find-b sev-" + (t === "red" ? "HIGH" : t === "blue" ? "LOW" : "INFO"), text: "FEATURE " + f2.featureIndex }),
+          h("span", { "class": "pill p-" + (f2.contribution > 0 ? "red" : f2.contribution < 0 ? "blue" : "gray"),
+                      text: (f2.contribution > 0 ? "+" : "") + num(f2.contribution, 4) })),
+        h("div", { "class": "find-t", text: "x = " + num(f2.x, 4) + " · β = " + num(f2.beta, 4) }),
+        h("div", { "class": "find-m" },
+          h("span", { "class": "lb", text: "family" }), document.createTextNode(" " + String(f2.family)),
+          h("span", { "class": "lb", text: " · contribution " }), document.createTextNode(num(f2.contribution, 5)))));
+    });
+    if (!feats.length && L.id !== "INFRASTRUCTURE" && L.id !== "THREAT INTELLIGENCE" && !L.noFam)
+      box.appendChild(h("div", { "class": "find" }, h("div", { "class": "find-t", text: "No feature in this layer contributed to the score." })));
+    fbox.appendChild(box);
+  });
+  wrap.appendChild(sectionNo(3, "Detection findings", h("div", null,
+    fbox,
+    orphans.length ? note("Families returned by the backend that no layer above claims: " +
+      orphans.join(", ") + ". They are listed here so an unclaimed family is visible rather than dropped.", "wr") : null,
+    note("Feature values, weights and contributions are all read from featureBreakdown.perFeature. " +
+      "This console groups and displays them; it never computes a score of its own."))));
+
+  /* 4 class distribution */
+  var dist = h("div", { "class": "g3" });
+  var classes = lst(m.classes), ps = lst(m.p);
+  var pmax = 0; ps.forEach(function (v) { pmax = Math.max(pmax, v); });
+  classes.forEach(function (c, i) {
+    var v = ps[i];
+    var arg = (m.argmax === i);
+    dist.appendChild(h("div", { "class": "fam" },
+      h("div", { "class": "fam-h" },
+        h("span", { "class": "fam-n", text: String(c) }),
+        h("span", { "class": "fam-v", text: num(v, 4) })),
+      meter(pmax > 0 && typeof v === "number" ? v / pmax : 0, arg ? "accent" : "gray"),
+      arg ? h("div", { "class": "fam-f" }, h("span", { "class": "pill p-accent", text: "argmax" })) : null));
+  });
+  wrap.appendChild(sectionNo(4, "Class distribution (not probabilities)", h("div", null, dist,
+    note("These are the model's raw class scores for one message. They are not calibrated probabilities and do not sum to a statement about intent."))));
+
+  /* 5 routing */
+  wrap.appendChild(sectionNo(5, "Routing analysis", relayBlock(at)));
+  /* 6 attribution */
+  var cf = obj(at.confidence);
+  wrap.appendChild(sectionNo(6, "Attribution confidence", h("div", null,
+    kv([
+      ["Value", num(cf.value, 4)],
+      ["Band", cf.band],
+      ["Capped", cf.capped ? "YES — cap " + num(cf.cap, 2) : "NO"],
+      ["Formula", cf.factors ? cf.factors.formula : UNKNOWN, "mono"],
+      ["Scale", cf.scale],
+      ["Cap note", cf.capNote || NODATA],
+      ["Ordering", at.ordering],
+      ["Ordering basis", at.orderingBasis]
+    ]),
+    h("div", { "class": "g2" },
+      h("div", null, h("div", { "class": "nav-sect" }, h("span", { text: "Observed" })),
+        bullets(lst(obj(cf.factors).observed))),
+      h("div", null, h("div", { "class": "nav-sect" }, h("span", { text: "Unobserved" })),
+        bullets(lst(obj(cf.factors).unobserved))))),
+    at.disclaimer ? note(String(at.disclaimer)) : null));
+  /* 7 uncertainty */
+  wrap.appendChild(sectionNo(7, "Stated uncertainty", bullets(lst(at.uncertain), "The service reported no specific uncertainty.")));
+  /* 8 correlation */
+  wrap.appendChild(sectionNo(8, "Campaign correlation", h("div", null,
+    kv([
+      ["Documents considered", num(co.documentsConsidered, 0)],
+      ["Clusters", num(co.clusters, 0)],
+      ["Unclustered", lst(co.unclustered).length],
+      ["Domains shared", num(co.domains, 0)],
+      ["URLs shared", num(co.urls, 0)],
+      ["Attachment hashes shared", num(co.attachmentHashes, 0)],
+      ["Risk", num(co.risk, 4)],
+      ["Confidence", num(co.confidence, 4)]
+    ]),
+    co.disclaimer ? note(String(co.disclaimer)) : null)));
+  /* 9 correlation doc list */
+  wrap.appendChild(sectionNo(9, "Cluster membership", table(["Document id"], lst(co.unclustered).map(function (d) {
+    return { cells: [h("td", { "class": "mono", text: d })] };
+  }), ["No documents", "No other document was in scope for this correlation pass."])));
+  /* 10 indicator extraction */
+  var inds = lst(at.indicators);
+  wrap.appendChild(sectionNo(10, "Extracted indicators", table(["Indicator", "Type", "Scope", "Source"], inds.map(function (i) {
+    return { cells: [h("td", { "class": "mono", text: s(i.value || i.ip || i) }),
+                     h("td", { text: s(i.type) }), h("td", { text: s(i.scope) }),
+                     h("td", { text: s(i.source) })] };
+  }), ["No indicators", "The engine extracted no indicator that met its reporting threshold."])));
+  /* 11 enrichment */
+  wrap.appendChild(sectionNo(11, "Infrastructure enrichment",
+    at.enrichment ? kv([["Providers consulted", lst(at.enrichment.providersConsulted)]]) : null));
+  /* 12 verdict */
+  wrap.appendChild(sectionNo(12, "Email security verdict", verdictBlock(a)));
+
+  return wrap;
+}
+function bullets(items, emptyMsg) {
+  if (!items.length) return h("div", { "class": "empty" }, h("b", { text: NODATA }), emptyMsg || "Nothing returned.");
+  var u = h("ul", { "class": "plain" });
+  items.forEach(function (i) {
+    u.appendChild(h("li", null, h("code", { text: String(i) })));
+  });
+  return u;
+}
+function verdictBlock(a) {
+  var m = obj(a.model), fb = obj(a.featureBreakdown), fe = obj(a.features), at = obj(a.attribution);
+  var tone = toneForBand(m.band);
+  var completeness = fe.total ? (fe.observed / fe.total) : null;
+  var g = h("div", null);
+  g.appendChild(h("div", { "class": "verd" },
+    vd("Threat", m.argmaxClass),
+    vd("Risk level", m.band),
+    vd("Confidence", num(m.cModel, 4)),
+    vd("Data completeness", completeness === null ? UNKNOWN : pct(completeness)),
+    vd("Evidence quality", fe.observed + " / " + fe.total + " features"),
+    vd("Risk score", num(m.riskFinal, 2) + " / 100"),
+    vd("Alert eligible", m.alertEligible ? "YES" : "NO"),
+    vd("BEC score", num(m.becScore, 4))
+  ));
+  /* SYSTEM ACTION is derived ONLY from fields the backend returned. */
+  var acts = [];
+  if (m.alertEligible === true) acts.push("ALERT · backend marked this message alert-eligible");
+  if (String(m.band || "").toUpperCase() === "HIGH" || String(m.band || "").toUpperCase() === "CRITICAL")
+    acts.push("REVIEW · backend band is " + m.band);
+  if (at && String(at.ordering) === "TRIVIAL") acts.push("INSUFFICIENT ROUTING · single or no relay hop observable");
+  if (m.caseNotCreated) acts.push("NO CASE · " + String(m.caseNotCreated));
+  if (a.caseId) acts.push("CASE OPENED · " + String(a.caseId));
+  if (!acts.length) acts.push("NO ACTION · backend returned no action signal");
+  g.appendChild(h("div", { "class": "action" },
+    h("div", { "class": "t", text: "System action" }),
+    acts.map(function (t) { return h("div", { "class": "v", text: t }); }),
+    h("div", { "class": "d", text: "Recommended only. This console never quarantines, blocks or forwards a message; those actions are not executed anywhere in this build." })));
+  return g;
+}
+function vd(k, v) {
+  return h("div", null, h("dt", { text: k }), h("dd", { text: s(v) }));
+}
+
+/* ======================================================================
+   9. PAGE — CASE / INVESTIGATION
+   ====================================================================== */
+function pageCase(id) {
+  var view = clear(document.getElementById("view"));
+  var st = h("div", { "class": "note", text: "Loading case " + id + "…" });
+  view.appendChild(st);
+  api("/api/report?case=" + encodeURIComponent(id)).then(function (r) {
+    clear(view);
+    if (!r.ok) {
+      view.appendChild(h("div", { "class": "ph" }, h("h1", { text: "Case investigation" })));
+      view.appendChild(panel("Case unavailable",
+        note(errText(r, "Report retrieval"), r.status === 404 ? "nc" : "wr")));
+      return;
+    }
+    state.report = r.data;
+    state.counters.reports++;
+    pushEvent("INFO", "report generated", id, "200");
+    renderCaseView(r.data, view);
+  });
+}
+function renderCaseView(rep, view) {
+  var k = obj(rep.case), au = obj(rep.audit), stix = obj(rep.stix);
+  var at = obj(k.attribution), fe = null;
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Case investigation" }),
+        h("div", { "class": "sub" },
+          h("code", { text: String(k.id) }),
+          document.createTextNode(" · " + String(k.status || UNKNOWN) + " · created " + when(k.createdAt)))),
+      h("div", { "class": "top-r" },
+        bandPill(k.band),
+        h("span", { "class": "pill p-gray", text: "Risk " + num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 2) }),
+        h("span", { "class": "pill p-gray", text: "Conf " + pct(k.confidence) }),
+        btn("Export STIX", function () { download("/export/stix?case=" + encodeURIComponent(k.id), "case-" + k.id + ".stix.json"); }),
+        btn("Export JSON", function () { downloadReport(rep, k.id); })))));
+
+  /* case header strip */
+  view.appendChild(panel("Case header", kv([
+    ["Case id", k.id, "mono"],
+    ["Document id", k.documentId, "mono"],
+    ["Message id", k.messageId || NODATA, "mono"],
+    ["Subject", k.subject || NODATA],
+    ["Classification", k.verdict],
+    ["Risk", num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 4)],
+    ["Confidence", num(k.confidence, 4)],
+    ["Created", when(k.createdAt)],
+    ["Observed", k.observedAt >= 0 ? when(k.observedAt) : UNKNOWN + " — no relay timestamp parsed"],
+    ["Status", k.status],
+    ["Evidence integrity", k.evidenceHash ? ("SHA-256 " + k.evidenceHash) : "FAILED — no evidence hash stored"]
+  ])));
+
+  /* graph + inspector */
+  var gstate = buildGraph(k, at);
+  var gtools = h("div", { "class": "gtools" },
+    btn("Reset view", function () { if (state.graph) state.graph.reset(); }, "sm"),
+    btn("Fit", function () { if (state.graph) state.graph.fit(); }, "sm"),
+    h("div", { "class": "gsel", id: "gsel" }, h("b", { text: "Selection" }),
+      h("span", { text: "Select a node to inspect it." })));
+  /* buildGraph must run before the layout below reads state.graph. */
+  state.graph = buildGraph(k, at);
+  var gwrap = h("div", { "class": "gwrap" }, state.graph.svg);
+  view.appendChild(h("div", { "class": "split" },
+    panelTight("Investigation graph — observed relationships only",
+      h("div", null, gtools, gwrap,
+        note("Every node and edge is drawn from a field the backend returned for this case. Nothing is inferred: no arrow exists unless the case record states the relationship."))),
+    panel("Evidence inspector", state.graph.inspector())));
+
+  /* relay */
+  view.appendChild(sectionNo(1, "Mail relay / Received path", relayBlock(at)));
+
+  /* origin / geo — must never claim an attacker location */
+  view.appendChild(sectionNo(2, "Observed infrastructure origin", h("div", null,
+    kv([
+      ["Label", "OBSERVED INFRASTRUCTURE — technically observable origin, not an identity"],
+      ["Primary address", at.primaryIp || NODATA, "mono"],
+      ["Candidates", lst(at.candidates).length],
+      ["Private hops", lst(at.privateHops).length],
+      ["Reserved hops", lst(at.reservedHops).length],
+      ["Country / region / city", UNKNOWN + " — no geolocation provider is compiled into this build"],
+      ["ISP / ASN / organization", UNKNOWN + " — no ASN or WHOIS lookup is performed"],
+      ["Infrastructure type", UNKNOWN + " — cloud / VPN / proxy / TOR cannot be determined without a provider"],
+      ["Hostname", at.hops && lst(at.hops).length ? lst(at.hops)[0].host : NODATA, "mono"]
+    ]),
+    at.disclaimer ? note(String(at.disclaimer), "wr") : null)));
+
+  /* domain intelligence */
+  view.appendChild(sectionNo(3, "Domain intelligence", h("div", null,
+    notCfg("Domain intelligence",
+      "This build performs no RDAP, WHOIS or DNS resolution. Registrar, creation date, expiration, nameservers, MX and A/AAAA records are all unavailable rather than unknown-in-principle."),
+    h("div", null, table(["Domain", "Registrar", "Created", "Expires", "NS", "MX", "A/AAAA", "Reputation"],
+      lst(k.domains).map(function (d) {
+        return { cells: [h("td", { "class": "mono", text: d }),
+          h("td", { text: NOCFG }), h("td", { text: NOCFG }), h("td", { text: NOCFG }),
+          h("td", { text: NOCFG }), h("td", { text: NOCFG }), h("td", { text: NOCFG }),
+          h("td", { text: NOCFG })] };
+      }), ["No domains", "The case record lists no domain."])))));
+
+  /* shodan */
+  view.appendChild(sectionNo(4, "Shodan intelligence",
+    notCfg("Shodan",
+      "No Shodan client, API key or provider is compiled into this build. Open ports, services, product, version, OS, hostnames, TLS data and vulnerabilities are therefore unavailable. No port list is displayed because none can be produced.")));
+
+  /* url intelligence */
+  view.appendChild(sectionNo(5, "URL intelligence", table(
+    ["URL", "Normalized", "Domain", "IP", "Redirects", "Obfuscation", "Reputation", "Status"],
+    lst(k.urls).map(function (u) {
+      var dom = "", ip = "";
+      try { dom = new URL(u).hostname; } catch (e) { dom = UNKNOWN; }
+      return { attrs: { title: "URL is never opened or fetched by this console" }, cells: [
+        h("td", { "class": "mono", text: trunc(u, 68) }), h("td", { text: NODATA }),
+        h("td", { "class": "mono", text: dom }), h("td", { text: UNKNOWN }),
+        h("td", { text: NODATA }), h("td", { text: NODATA }), h("td", { text: NOCFG }),
+        h("td", { text: NODATA })] };
+    }), ["No URLs", "The case record lists no URL."]),
+    note("URLs are displayed as inert text. This console never navigates to, resolves or requests a URL found in a message.")));
+
+  /* attachments */
+  view.appendChild(sectionNo(6, "Attachment intelligence", table(
+    ["Filename", "MIME", "Size", "SHA-256", "Entropy", "Archive", "Macro", "Embedded", "Reputation"],
+    lst(k.attachmentHashes).map(function (hh) {
+      return { cells: [h("td", { text: UNKNOWN }), h("td", { text: UNKNOWN }), h("td", { text: UNKNOWN }),
+        h("td", { "class": "mono", text: hh }), h("td", { text: NODATA }), h("td", { text: NODATA }),
+        h("td", { text: NODATA }), h("td", { text: NODATA }), h("td", { text: NOCFG })] };
+    }), ["No attachments", "The case record lists no attachment hash."]),
+    note("Attachments are never extracted, executed, rendered or previewed. Only a hash supplied by the backend would be shown.")));
+
+  /* IOC explorer */
+  view.appendChild(sectionNo(7, "IOC explorer", h("div", null,
+    table(["IOC", "Type", "Source", "First seen", "Last seen", "Reputation", "Relationships"],
+      iocRows(k, at), ["No indicators", "The case record lists no address, URL or hash."]),
+    notCfg("Reputation and first/last seen",
+      "No threat feed records exist for these indicators, so reputation, first seen and last seen are unavailable. Relationships shown are the case record's own membership lists."))));
+
+  /* campaign correlation */
+  var cor = state.lastAnalysisCorrelation;
+  view.appendChild(sectionNo(8, "Campaign correlation", h("div", null,
+    cor ? kv([
+      ["Documents considered", num(cor.documentsConsidered, 0)],
+      ["Clusters", num(cor.clusters, 0)],
+      ["Unclustered", lst(cor.unclustered).length],
+      ["Risk", num(cor.risk, 4)], ["Confidence", num(cor.confidence, 4)]
+    ]) : note("Correlation is computed when a message is analyzed and is not persisted on the case record. " +
+      "Re-analyze the message on the Email analysis page to populate it. Similarity is never recomputed in the browser."),
+    cor && lst(cor.unclustered).length ? table(["Document id"], lst(cor.unclustered).map(function (d) {
+      return { cells: [h("td", { "class": "mono", text: d })] };
+    })) : null)));
+
+  /* timeline */
+  view.appendChild(sectionNo(9, "Investigation timeline", timelineBlock(k)));
+
+  /* audit integrity */
+  view.appendChild(sectionNo(10, "Audit integrity", auditBlock(au)));
+
+  /* full forensic report layout */
+  view.appendChild(sectionNo(11, "Forensic report", forensicSections(k, au, stix)));
+
+  view.appendChild(panel("Chain of custody and limitations", h("div", null,
+    kv([
+      ["Evidence hash", k.evidenceHash || NODATA, "mono"],
+      ["Case origin", k.caseOrigin || (k.id ? "OPENED BEFORE THIS SESSION" : UNKNOWN)],
+      ["Stored members", lst(k.members)],
+      ["Source", "local analysis service on loopback"],
+      ["Geolocation", NOCFG + " — no provider"],
+      ["Threat intelligence", NOCFG + " — no feed"],
+      ["Reputation", NOCFG + " — no feed"],
+      ["Certificate inspection", NOCFG + " — no TLS inspection"],
+      ["Malware execution", "NEVER — attachments are not executed or extracted"]
+    ]))));
+
+  paintTop();
+}
+
+/* ---- relay path ---- */
+function relayBlock(at) {
+  var hops = lst(at.hops);
+  if (!hops.length) return h("div", { "class": "empty" },
+    h("b", { text: NODATA }), "No Received hop was parsed from this message, so no relay path exists to draw.");
+  var box = h("div", { "class": "relay" });
+  hops.forEach(function (hp, i) {
+    var res = String(hp.ipObserved || "").indexOf("203.0.113") === 0 ||
+               lst(obj(at).reservedHops).join("|").indexOf(String(hp.ipObserved)) >= 0;
+    box.appendChild(h("div", { "class": "hop" + (res ? " res" : "") },
+      h("div", { "class": "hop-r" },
+        h("div", { "class": "hop-n", text: String(i + 1) }),
+        h("div", { "class": "hop-l" })),
+      h("div", { "class": "hop-b" },
+        h("div", { "class": "hop-t", text: "Hop " + (i + 1) + (hp.ipObserved ? " · " + String(hp.ipObserved) : "") }),
+        h("div", { "class": "hop-m", text: String(hp.host || UNKNOWN) }),
+        h("div", { "class": "hop-m", text: "by " + String(hp.by || UNKNOWN) +
+          " · " + String(hp.protocol || UNKNOWN) + (hp.id ? " · id " + String(hp.id) : "") }),
+        hp.forClause ? h("div", { "class": "hop-r2", text: "for " + String(hp.forClause) }) : null,
+        h("div", { "class": "hop-r2", text: "timestamp: " +
+          (typeof hp.timestampMillis === "number" && hp.timestampMillis >= 0
+            ? when(hp.timestampMillis) : String(hp.timestampRaw || UNKNOWN)) }),
+        h("div", { "class": "hop-r2", text: "validation: " + (res ? "address is in a reserved range, not routable" : "no reverse-DNS or ASN check is performed in this build") }))));
+  });
+  if (at.ordering) {
+    box.appendChild(h("div", { "class": "note" },
+      h("b", { text: "Relay ordering: " + String(at.ordering) }),
+      h("div", { text: String(at.orderingBasis || UNKNOWN) })));
+  }
+  var prim = at.primaryIp;
+  if (prim) {
+    box.appendChild(h("div", { "class": "hop" },
+      h("div", { "class": "hop-r" }, h("div", { "class": "hop-n", text: "•" }), h("div", { "class": "hop-l" })),
+      h("div", { "class": "hop-b" },
+        h("div", { "class": "hop-t", text: "Observable public address" }),
+        h("div", { "class": "hop-m", text: String(prim) }))));
+  } else {
+    box.appendChild(h("div", { "class": "hop res" },
+      h("div", { "class": "hop-r" }, h("div", { "class": "hop-n", text: "?" }), h("div", { "class": "hop-l" })),
+      h("div", { "class": "hop-b" },
+        h("div", { "class": "hop-t", text: "Observable public address" }),
+        h("div", { "class": "hop-m", text: UNKNOWN }),
+        h("div", { "class": "hop-r2", text: "No publicly routable address is observable from this message. " +
+          "Attribution confidence is " + String(obj(at.confidence).band) + "." }))));
+  }
+  return box;
+}
+
+/* ---- timeline: only real timestamps ---- */
+function timelineBlock(k) {
+  var evs = [];
+  if (k.observedAt >= 0) evs.push({ t: k.observedAt, n: "Email received", d: "Relay timestamp parsed from a Received header", c: "ok" });
+  else evs.push({ t: null, n: "Email received", d: "No relay timestamp could be parsed from the Received headers", c: "warn" });
+  evs.push({ t: k.createdAt, n: "Evidence preserved", d: "SHA-256 " + String(k.evidenceHash || UNKNOWN), c: "ok" });
+  evs.push({ t: null, n: "Header parsed", d: "Completed during the analysis run that created this case; the per-stage timestamp is not persisted on the case record", c: "" });
+  evs.push({ t: null, n: "Authentication analysed", d: "Result retained in the scoring model; per-stage timestamp not persisted", c: "" });
+  evs.push({ t: null, n: "URL extracted", d: lst(k.urls).length + " URL(s) recorded on the case", c: "" });
+  evs.push({ t: null, n: "Attachment analysed", d: lst(k.attachmentHashes).length + " attachment hash(es) recorded on the case", c: "" });
+  evs.push({ t: null, n: "Infrastructure identified", d: lst(k.hopAddresses).length + " observed address(es)", c: "" });
+  evs.push({ t: null, n: "Correlation completed", d: "Computed at analysis time; not persisted on the case record", c: "" });
+  evs.push({ t: k.createdAt, n: "Risk calculated", d: "riskFinal " + num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 4) + " · " + String(k.verdict), c: "" });
+  evs.push({ t: null, n: "Alert generated", d: "No alerting integration is compiled into this build", c: "warn" });
+  var box = h("div", { "class": "tl" });
+  /* The timeline is rebuilt per render, so each row carries a one-shot entry
+     animation with its stagger in a class rather than an inline style. */
+  evs.forEach(function (e, i) {
+    var row = h("div", { "class": "tl-e tlin " + (e.c || "") + " td" + Math.min(i, 11) },
+      h("div", { "class": "tl-d" }),
+      h("div", { "class": "tl-t", text: e.n }),
+      h("div", { "class": "tl-t2", text: e.t ? when(e.t) : "TIMESTAMP " + UNKNOWN }),
+      h("div", { "class": "note", text: e.d }));
+    box.appendChild(row);
+  });
+  return box;
+}
+
+/* ---- audit ---- */
+function auditBlock(au) {
+  au = obj(au);
+  var wrap = h("div", null);
+  var a = String(au.assurance || "");
+  var cls = a === "SIGNED" ? "ok" : a === "UNSIGNED" ? "warn" : a === "EMPTY" ? "warn" : "bad";
+  wrap.appendChild(h("div", { "class": "aud " + cls },
+    h("div", null, h("div", { "class": "aud-k", text: a === "TAMPERED" ? "Integrity failure" : (a || UNKNOWN) })),
+    h("div", { "class": "aud-d", text: String(au.assuranceMeaning || "") })));
+  wrap.appendChild(kv([
+    ["Chain intact", au.chainIntact ? "YES" : "NO"],
+    ["Records", num(au.records, 0)],
+    ["First divergence", au.firstDivergentIndex >= 0 ? String(au.firstDivergentIndex) : "none"],
+    ["Head hash", au.headHash, "mono"],
+    ["Signature configured", au.signatureConfigured ? "YES" : "NO"],
+    ["Head signature valid", au.headSignatureValid ? "YES" : "NO"],
+    ["Last signed index", num(au.lastSignedIndex, 0)],
+    ["Last signature valid", au.lastSignatureValid ? "YES" : "NO"],
+    ["Signing cadence", "every " + count(au.signEveryN) + " records"],
+    ["Reason", au.reason || "none"]
+  ]));
+  return wrap;
+}
+
+/* ---- 16-section forensic report ---- */
+function forensicSections(k, au, stix) {
+  var at = obj(k.attribution);
+  var objs = lst(stix.objects);
+  var wrap = h("div", null);
+  var rep = h("div", { "class": "rep" });
+  function cell(no, label, body) {
+    return h("div", { "class": "panel" },
+      h("div", { "class": "pb" }, repHead(no, label), body));
+  }
+  rep.appendChild(cell(1, "Evidence preservation", kv([
+    ["Case id", k.id, "mono"], ["Evidence hash", k.evidenceHash, "mono"],
+    ["Created", when(k.createdAt)], ["Status", k.status]])));
+  rep.appendChild(cell(2, "Risk scoring", kv([
+    ["Risk (logistic)", num(k.risk, 4)], ["Risk final", num(k.riskFinal, 4)],
+    ["Confidence", num(k.confidence, 4)], ["Band", k.band]])));
+  rep.appendChild(cell(3, "Detection findings", h("div", null,
+    note("Per-feature contributions are not persisted on the case record. They are shown on the Email analysis page for the message that produced this case."))));
+  rep.appendChild(cell(4, "Email header forensics", kv([
+    ["From", lst(k.addresses)], ["Message id", k.messageId, "mono"],
+    ["Subject", k.subject || NODATA], ["Domains", lst(k.domains)]])));
+  rep.appendChild(cell(5, "Authentication analysis", notCfg("SPF / DKIM / DMARC detail",
+    "Authentication results are folded into the scoring model and reported as contributing features on the analysis page. The parsed authentication verdicts are not persisted on the case record.")));
+  rep.appendChild(cell(6, "Routing analysis", h("div", null,
+    kv([["Hops", lst(at.hops).length], ["Ordering", at.ordering], ["Basis", at.orderingBasis]]),
+    h("div", { "class": "note", text: "Per-hop detail is shown in section 1 of this page." }))));
+  rep.appendChild(cell(7, "URL / domain intelligence", h("div", null,
+    kv([["URLs", lst(k.urls).length], ["Domains", lst(k.domains).length],
+        ["Registrar / DNS / reputation", NOCFG]]))));
+  rep.appendChild(cell(8, "Attachment analysis", kv([["Attachment hashes", lst(k.attachmentHashes).length],
+    ["Execution", "NEVER"]])));
+  rep.appendChild(cell(9, "Infrastructure / geolocation", h("div", null,
+    kv([["Observed addresses", lst(k.hopAddresses)], ["Primary", at.primaryIp || NODATA, "mono"],
+        ["Country / city / ISP / ASN", UNKNOWN]]),
+    note("Infrastructure observation does not establish the physical identity or intent of a sender.", "wr"))));
+  rep.appendChild(cell(10, "Shodan intelligence", notCfg("Shodan", "No Shodan provider is compiled into this build.")));
+  rep.appendChild(cell(11, "IOC summary", kv([
+    ["Addresses", lst(k.hopAddresses).length], ["URLs", lst(k.urls).length],
+    ["Attachment hashes", lst(k.attachmentHashes).length],
+    ["Reputation", NOCFG]])));
+  rep.appendChild(cell(12, "Campaign correlation", note(
+    "Computed at analysis time and not persisted on the case record. Re-analyze the message to populate it.")));
+  rep.appendChild(cell(13, "Investigation timeline", h("div", null,
+    kv([["Case created", when(k.createdAt)], ["Observed", k.observedAt >= 0 ? when(k.observedAt) : UNKNOWN]]))));
+  rep.appendChild(cell(14, "Risk explanation", h("div", null,
+    note("Verdict " + String(k.verdict) + " at band " + String(k.band) +
+      ". The scoring model is hand-set and uncalibrated; its output is a ranking aid, not a probability."))));
+  rep.appendChild(cell(15, "Chain of custody", h("div", null,
+    kv([["Evidence hash", k.evidenceHash, "mono"], ["Case origin", k.caseOrigin || UNKNOWN],
+        ["Members", lst(k.members)], ["Audit assurance", String(au.assurance)]]))));
+  rep.appendChild(cell(16, "Limitations", h("div", null,
+    kv([["Geolocation", NOCFG], ["Threat intelligence", NOCFG], ["Reputation", NOCFG],
+        ["WHOIS / RDAP", NOCFG], ["TLS inspection", NOCFG], ["Malware execution", "NEVER"]]))));
+  wrap.appendChild(rep);
+
+  wrap.appendChild(h("div", { "class": "panel" }, h("div", { "class": "pb" },
+    repHead(17, "STIX bundle"),
+    note(objs.length + " object(s) returned by the backend. Exported verbatim; nothing is added or renamed."),
+    table(["Type", "id", "Value"], objs.map(function (o) {
+      return { cells: [h("td", { text: String(o.type || UNKNOWN) }),
+                       h("td", { "class": "mono", text: trunc(String(o.id || ""), 44) }),
+                       h("td", { "class": "mono", text: trunc(String(o.value || o.name || o.pattern || o.description || NODATA), 60) })] };
+    }), ["No STIX objects", "The backend returned an empty bundle."]))));
+  return wrap;
+}
+
+function iocRows(k, at) {
+  var rows = [];
+  lst(k.hopAddresses).forEach(function (ip) {
+    var c = null;
+    lst(at.candidates).forEach(function (x) { if (x.ip === ip) c = x; });
+    rows.push({ cells: [h("td", { "class": "mono", text: ip }),
+      h("td", { text: "IP" }), h("td", { text: c ? String(c.source) : "case record" }),
+      h("td", { text: UNKNOWN }), h("td", { text: UNKNOWN }), h("td", { text: NOCFG }),
+      h("td", { "class": "mono", text: lst(k.domains).join(", ") || NODATA })] });
+  });
+  lst(k.urls).forEach(function (u) {
+    rows.push({ cells: [h("td", { "class": "mono", text: trunc(u, 52) }),
+      h("td", { text: "URL" }), h("td", { text: "case record" }), h("td", { text: UNKNOWN }),
+      h("td", { text: UNKNOWN }), h("td", { text: NOCFG }), h("td", { text: NODATA })] });
+  });
+  lst(at.indicators).forEach(function (i) {
+    rows.push({ cells: [h("td", { "class": "mono", text: s(i.value || i.ip) }),
+      h("td", { text: s(i.type) }), h("td", { text: s(i.source) }), h("td", { text: UNKNOWN }),
+      h("td", { text: UNKNOWN }), h("td", { text: NOCFG }), h("td", { text: NODATA })] });
+  });
+  lst(k.attachmentHashes).forEach(function (hh) {
+    rows.push({ cells: [h("td", { "class": "mono", text: trunc(hh, 52) }),
+      h("td", { text: "HASH" }), h("td", { text: "case record" }), h("td", { text: UNKNOWN }),
+      h("td", { text: UNKNOWN }), h("td", { text: NOCFG }), h("td", { text: NODATA })] });
+  });
+  lst(k.addresses).forEach(function (a2) {
+    rows.push({ cells: [h("td", { "class": "mono", text: a2 }),
+      h("td", { text: "EMAIL" }), h("td", { text: "case record" }), h("td", { text: UNKNOWN }),
+      h("td", { text: UNKNOWN }), h("td", { text: NOCFG }), h("td", { text: NODATA })] });
+  });
+  return rows;
+}
+
+/* ======================================================================
+   10. INVESTIGATION GRAPH (SVG, attribute-driven)
+   Nodes exist only for fields the case actually carries.
+   ====================================================================== */
+function buildGraph(k, at) {
+  var W = 900, Hh = 452;
+  var svg = sv("svg", { id: "graph", viewBox: "0 0 " + W + " " + Hh,
+                        role: "img", "aria-label": "Investigation relationship graph" });
+  var gRoot = sv("g", { id: "gRoot" }, svg);
+  var gE = sv("g", null, gRoot), gN = sv("g", null, gRoot);
+  var nodes = [], edges = [], seq = 0;
+
+  function N(type, key, label, x, y) {
+    var n = { id: "n" + (seq++), type: type, key: key, label: label, x: x, y: y };
+    nodes.push(n); return n;
+  }
+  function E(a, b, label) { edges.push({ a: a, b: b, label: label || "" }); }
+
+  var mail = N("EMAIL", k.documentId, trunc(k.subject || k.documentId, 22), W / 2, 46);
+  var fromList = lst(k.addresses).slice(0, 1);
+  var from = fromList.length ? N("SENDER", fromList[0], trunc(fromList[0], 20), W / 2 - 200, 120) : null;
+  var to = N("RECIPIENT", k.members[0] || "unknown", trunc(k.members[0] || "unknown", 20), W / 2 + 200, 120);
+  if (from) E(from, mail, "from");
+  E(to, mail, "to");
+
+  var hops = lst(at.hops);
+  hops.slice(0, 4).forEach(function (hp, i) {
+    var y = 190 + i * 76;
+    var x = W / 2 - 200 + (i % 2) * 400;
+    var hn = N("HOST", hp.host || "hop" + i, trunc(hp.host || "hop " + i, 20), x, y);
+    E(mail, hn, "relay " + (i + 1));
+    if (hp.ipObserved) {
+      var ipn = N("IP", hp.ipObserved, hp.ipObserved, x + 150, y);
+      E(hn, ipn, "observed at");
+    }
+  });
+
+  var doms = lst(k.domains).slice(0, 3);
+  doms.forEach(function (d, i) {
+    var dn = N("DOMAIN", d, trunc(d, 20), W / 2 - 300 + i * 300, Hh - 52);
+    if (from) E(from, dn, "domain");
+  });
+  lst(k.urls).slice(0, 3).forEach(function (u, i) {
+    var un = N("URL", u, trunc(u, 24), 120 + i * 250, Hh - 130);
+    E(mail, un, "url");
+  });
+  lst(k.attachmentHashes).slice(0, 2).forEach(function (hh, i) {
+    var hn2 = N("HASH", hh, trunc(hh, 16), W - 220, Hh - 130 + i * 70);
+    E(mail, hn2, "attachment");
+  });
+  if (lst(k.members).length > 1) {
+    var cm = N("CAMPAIGN", "cluster", "cluster " + lst(k.members).length + " member(s)", W - 130, 46);
+    lst(k.members).slice(0, 4).forEach(function (m) { E(cm, N("EMAIL", m, trunc(m, 20), W - 260, 150), "member"); });
+  }
+
+  var TONE = { EMAIL: "accent", SENDER: "blue", RECIPIENT: "blue", DOMAIN: "blue",
+               HOST: "blue", IP: "amber", URL: "amber", HASH: "amber", CAMPAIGN: "red" };
+
+  /* ---- edges ---- */
+  edges.forEach(function (e) {
+    var x1 = e.a.x, y1 = e.a.y, x2 = e.b.x, y2 = e.b.y;
+    var mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    var lx = x2 - x1, ly = y2 - y1;
+    var len = Math.sqrt(lx * lx + ly * ly) || 1;
+    var ux = lx / len, uy = ly / len;
+    var off = 78;
+    e.ax = x1 + ux * off; e.ay = y1 + uy * off;
+    e.bx = x2 - ux * off; e.by = y2 - uy * off;
+    var bend = Math.min(26, len / 6);
+    e.cx = mx - uy * bend; e.cy = my + ux * bend;
+    e.d = "M " + e.ax.toFixed(1) + " " + e.ay.toFixed(1) +
+          " Q " + e.cx.toFixed(1) + " " + e.cy.toFixed(1) +
+          " " + e.bx.toFixed(1) + " " + e.by.toFixed(1);
+    gE.appendChild(sv("path", { "class": "gedge", d: e.d, "marker-end": "url(#arrow)" }));
+    e.el = gE.lastChild;
+    if (e.label) {
+      var lb = sv("text", {
+        "class": "glbl", x: ((e.ax + e.bx + e.cx) / 3).toFixed(1),
+        y: ((e.ay + e.by + e.cy) / 3 - 4).toFixed(1), "text-anchor": "middle",
+        text: e.label
+      });
+      gE.appendChild(lb);
+      e.lb = lb;
+    }
+  });
+
+  /* ---- nodes ---- */
+  nodes.forEach(function (nd) {
+    var w = Math.max(96, Math.min(210, 13 + String(nd.label).length * 7.1));
+    var g = sv("g", { "class": "gnode t-" + (TONE[nd.type] || "gray"), tabindex: "0",
+                      role: "button", "aria-label": nd.type + " " + String(nd.key) });
+    g.appendChild(sv("rect", { x: (nd.x - w / 2).toFixed(1), y: (nd.y - 19).toFixed(1),
+                                width: w.toFixed(1), height: 38, rx: 7 }));
+    g.appendChild(sv("text", { x: nd.x.toFixed(1), y: (nd.y - 2).toFixed(1),
+                               "text-anchor": "middle", text: nd.type }));
+    g.appendChild(sv("text", { "class": "sub", x: nd.x.toFixed(1), y: (nd.y + 12).toFixed(1),
+                               "text-anchor": "middle", text: String(nd.label) }));
+    g.__n = nd;
+    function pick() {
+      nodes.forEach(function (o) { o.el.classList.remove("sel"); });
+      edges.forEach(function (e) { e.el.classList.remove("trace"); });
+      g.classList.add("sel");
+      edges.filter(function (e) { return e.a === nd || e.b === nd; })
+        .forEach(function (e) { e.el.classList.add("trace"); });
+      paintInspector();
+    }
+    g.addEventListener("click", pick);
+    g.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); }
+    });
+    nd.el = g;
+    gN.appendChild(g);
+  });
+  /* Graph nodes are rebuilt on every render, so they cannot rely on a CSS
+     transition from a prior state. Stagger them in as a traversal instead, and
+     let settleIn skip everything under reduced motion. */
+  settleIn(nodes.map(function (nd) { return nd.el; }), 420);
+
+  /* ---- defs + pan/zoom ---- */
+  var defs = sv("defs", null, svg);
+  var mk = sv("marker", { id: "arrow", viewBox: "0 0 10 10", refX: 9, refY: 5,
+                          markerWidth: 5.5, markerHeight: 5.5, orient: "auto-start-reverse" });
+  mk.appendChild(sv("path", { "class": "glbl", d: "M 0 0 L 10 5 L 0 10 z" }));
+  defs.appendChild(mk);
+
+  var vb = { x: 0, y: 0, w: W, h: Hh };
+  function applyVB() { svg.setAttribute("viewBox", vb.x.toFixed(1) + " " + vb.y.toFixed(1) + " " + vb.w.toFixed(1) + " " + vb.h.toFixed(1)); }
+  function zoom(f, cx, cy) {
+    var nw = Math.max(220, Math.min(2400, vb.w * f));
+    var nh = nw * (Hh / W);
+    var k = nw / vb.w;
+    vb.x = cx - (cx - vb.x) * k;
+    vb.y = cy - (cy - vb.y) * k;
+    vb.w = nw; vb.h = nh;
+    clampVB(); applyVB();
+  }
+  function clampVB() {
+    vb.w = Math.max(220, Math.min(2400, vb.w));
+    vb.h = vb.w * (Hh / W);
+    vb.x = Math.max(-W * 0.5, Math.min(W * 1.5 - vb.w, vb.x));
+    vb.y = Math.max(-Hh * 0.5, Math.min(Hh * 1.5 - vb.h, vb.y));
+  }
+  function zoomAt(f, clientX, clientY) {
+    var r = svg.getBoundingClientRect();
+    zoom(f, vb.x + ((clientX - r.left) / r.width) * vb.w,
+            vb.y + ((clientY - r.top) / r.height) * vb.h);
+  }
+  svg.addEventListener("wheel", function (ev) {
+    ev.preventDefault();
+    zoomAt(ev.deltaY < 0 ? 0.86 : 1.16, ev.clientX, ev.clientY);
+  }, { passive: false });
+  var drag = null;
+  svg.addEventListener("pointerdown", function (ev) {
+    if (ev.target.closest && ev.target.closest(".gnode")) return;
+    drag = { px: ev.clientX, py: ev.clientY, vx: vb.x, vy: vb.y };
+    svg.classList.add("drag");
+    if (svg.setPointerCapture) { try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* detached */ } }
+  });
+  svg.addEventListener("pointermove", function (ev) {
+    if (!drag) return;
+    var r = svg.getBoundingClientRect();
+    vb.x = drag.vx - ((ev.clientX - drag.px) / r.width) * vb.w;
+    vb.y = drag.vy - ((ev.clientY - drag.py) / r.height) * vb.h;
+    clampVB(); applyVB();
+  });
+  function endDrag() { drag = null; svg.classList.remove("drag"); }
+  svg.addEventListener("pointerup", endDrag);
+  svg.addEventListener("pointercancel", endDrag);
+  svg.addEventListener("pointerleave", endDrag);
+
+  /* ---- inspector ---- */
+  var ins = h("div", { "class": "kv-wrap" });
+  function paintInspector() {
+    clear(ins);
+    var sel = nodes.filter(function (n) { return n.el && n.el.classList.contains("sel"); })[0];
+    if (!sel) {
+      ins.appendChild(note("Select a node in the graph to inspect the value the backend returned for it.", "nc"));
+      return;
+    }
+    var rel = edges.filter(function (e) { return e.a === sel || e.b === sel; });
+    ins.appendChild(kv([
+      ["Type", sel.type],
+      ["Key", sel.key, "mono"],
+      ["Connections", rel.length],
+      ["Field source", sel.type === "EMAIL" ? "case.addresses / case.members"
+         : sel.type === "HOST" ? "attribution.hops[].host"
+         : sel.type === "IP" ? "attribution.hops[].ipObserved"
+         : sel.type === "URL" ? "case.urls"
+         : sel.type === "HASH" ? "case.attachmentHashes"
+         : sel.type === "DOMAIN" ? "case.domains"
+         : sel.type === "CAMPAIGN" ? "correlation.members" : "case record"]
+    ]));
+    if (rel.length) {
+      var tb = h("tbody");
+      rel.forEach(function (e) {
+        var other = e.a === sel ? e.b : e.a;
+        tb.appendChild(h("tr", { "class": "clickable" },
+          h("td", { text: other.type }),
+          h("td", { "class": "mono", text: trunc(String(other.key), 30) }),
+          h("td", { text: e.label })));
+      });
+      ins.appendChild(h("div", { "class": "twrap" },
+        h("table", { "class": "t" },
+          h("thead", null, h("tr", null,
+            h("th", { text: "Connects to" }), h("th", { text: "Value" }), h("th", { text: "Relation" }))),
+          tb)));
+    }
+  }
+  paintInspector();
+
+  return {
+    svg: svg,
+    inspector: function () { return ins; },
+    reset: function () { vb.x = 0; vb.y = 0; vb.w = W; vb.h = Hh; applyVB(); },
+    fit: function () { vb.x = 0; vb.y = 0; vb.w = W; vb.h = Hh; applyVB(); },
+    zoom: function (f) { zoom(f, vb.x + vb.w / 2, vb.y + vb.h / 2); }
+  };
+}
+/* ======================================================================
+   11. PAGE — UNIFIED WORKSPACE
+   One surface: the case list on the left, the console state on the right.
+   Both read the same backend responses the command center reads.
+   ====================================================================== */
+function pageWorkspace() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Unified workspace" }),
+        h("div", { "class": "sub", text: "Operational queues and engine state in one view. This is the same data the command center aggregates — it is not a second source of truth." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-gray", text: "This session: " + count(state.counters.analyzed) + " analyzed" }),
+        btn("Refresh", route, "sm")))));
+
+  var left = h("div", null);
+  left.appendChild(panel("Open case queue",
+    table(["Case", "Band", "Risk", "Verdict", "Status"],
+      f.cases.map(function (k) {
+        return {
+          attrs: { "class": "clickable", tabindex: "0", role: "button",
+                   "aria-label": "Open case " + String(k.id) },
+          cells: [h("td", { "class": "mono", text: trunc(String(k.id), 22) }),
+                  h("td", null, bandPill(k.band)),
+                  h("td", { text: num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 1) }),
+                  h("td", { text: String(k.verdict || UNKNOWN) }),
+                  h("td", { text: String(k.status || UNKNOWN) })]
+        };
+      }).map(function (row) {
+        var k = f.cases.filter(function (x) {
+          return String(x.id) === String(row.cells[0].textContent);
+        })[0];
+        function open() { if (k) location.hash = "#/case/" + encodeURIComponent(k.id); }
+        row.attrs.onclick = open;
+        row.attrs.onkeydown = function (e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+        };
+        return row;
+      }),
+      ["No cases", "The backend returned an empty case list. Nothing is queued."], "tall"),
+    btn("All cases", function () { location.hash = "#/cases"; }, "sm")));
+
+  var right = h("div", null);
+  right.appendChild(panel("Engine state", h("div", { "class": "mods" },
+    f.engines.map(function (e) { return modChip(e.name, e.state, e.d); }))));
+  right.appendChild(panel("Console activity", h("div", { "id": "evList" })));
+  paintEvents();
+
+  view.appendChild(h("div", { "class": "split" }, left, right));
+}
+
+/* ======================================================================
+   12. PAGE — FORENSIC TOOLKIT
+   Every entry is a real backend capability or an explicit NOT CONFIGURED.
+   ====================================================================== */
+function pageToolkit() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+  var a = state.analysis;
+  var at = obj(a ? a.attribution : null);
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Forensic toolkit" }),
+        h("div", { "class": "sub", text: "Capabilities compiled into this build, with the exact reason a capability cannot report. Nothing on this page is simulated." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-blue", text: "Local engine only" }),
+        btn("Analyze an email", function () { location.hash = "#/analysis"; }, "sm")))));
+
+  var available = [
+    ["Header and MIME parser", a ? "available · exercised this session" : "available · idle",
+      a ? ("parsed " + num(obj(a.parsed).hops, 0) + " relay hops, " + num(obj(a.parsed).parts, 0) + " parts, " +
+           num(obj(a.parsed).urls, 0) + " URL(s)") : "runs when an analysis is executed", a],
+    ["Authentication results", a ? "available" : "available · idle",
+      a ? (num(obj(a.features).authFail, 0) + " SPF/DKIM/DMARC failure(s), " +
+           num(obj(a.features).authPass, 0) + " pass(es)") : "requires an analysis", a],
+    ["Risk scoring", a ? "available" : "available · idle",
+      a ? ("riskFinal " + num(obj(a.model).riskFinal, 2) + ", band " + String(obj(a.model).band))
+        : "requires an analysis; the model is hand-set and uncalibrated", a],
+    ["Relay path extraction", a ? "available" : "available · idle",
+      a ? (lst(at.hops).length + " hop(s), " + lst(at.privateHops).length + " private")
+        : "requires an analysis", a],
+    ["Attachment hashing", a ? "available" : "available · idle",
+      a ? (lst(obj(a.features).attachmentHashes).length + " hash(es)")
+        : "attachments are hashed locally; contents are never executed", a],
+    ["IOC extraction", a ? "available" : "available · idle",
+      a ? (lst(at.indicators).length + " indicator(s)") : "requires an analysis", a],
+    ["Local confusable enrichment", f.enrichmentPresent ? "available" : "available · no match",
+      f.enrichmentPresent ? "a local confusable match was returned for this message"
+        : "the build ships a confusable table; a match was not returned for this message", a],
+    ["Local campaign correlation", a ? "available" : "available · idle",
+      a ? (num(obj(a.correlation).documentsConsidered, 0) + " document(s) considered, " +
+           num(obj(a.correlation).clusters, 0) + " cluster(s)")
+        : "computed over the local corpus at analysis time", a],
+    ["Audit chain verification", f.auditKnown ? "available · exercised" : "available · not yet verified",
+      f.auditKnown ? (count(f.records) + " record(s), assurance " + String(f.assurance))
+        : "run to read the current chain state", f.auditKnown],
+    ["Evidence hashing", true, "SHA-256 evidence hash is written on every case at open time", true]
+  ];
+
+  var missing = [
+    ["Geolocation", "No GeoIP or MaxMind database is compiled into this build, so no city, region or country can be produced."],
+    ["WHOIS / RDAP", "No registry client is compiled in, so registrar, creation date, expiry and nameservers are unavailable."],
+    ["ASN and organization", "No ASN lookup is performed, so hosting provider and network owner cannot be named."],
+    ["Threat intelligence", "No reputation or classification feed is compiled in, so an IOC's maliciousness is UNKNOWN rather than safe."],
+    ["Shodan", "No Shodan client or API key exists in this build, so no ports, services or host banners can be shown."],
+    ["VirusTotal", "No VirusTotal client exists in this build, so no multi-engine verdict is available."],
+    ["TLS inspection", "No proxy or sensor observes transport, so certificate and cipher facts are unavailable."],
+    ["Mailbox action", "This console never quarantines, blocks, forwards or deletes. Those actions do not exist anywhere in this build."]
+  ];
+
+  view.appendChild(panel("Available in this build",
+    table(["Capability", "State", "Evidence"],
+      available.map(function (r) {
+        return { cells: [h("td", { text: r[0] }),
+                         h("td", null, h("span", { "class": "pill " + (r[2] ? "p-green" : "p-gray"), text: r[1] })),
+                         h("td", { text: r[2] ? r[2] : "No analysis has been run in this session, so this capability has produced no result yet." })] };
+      }))));
+
+  view.appendChild(panel("Not compiled into this build",
+    h("div", null, missing.map(function (m) {
+      return notCfg(m[0], m[1]);
+    }))));
+}
+
+/* ======================================================================
+   13. PAGE — CASES
+   ====================================================================== */
+function pageCases() {
+  var view = clear(document.getElementById("view"));
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Cases" }),
+        h("div", { "class": "sub", text: "Every case the backend holds, with the evidence hash and creation time it recorded." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-gray", text: "Page 1 · " + PAGE_SIZE + " per page" }),
+        btn("Refresh", refreshCases, "sm")))));
+
+  var host = h("div", { "class": "note", text: "Loading cases…" });
+  view.appendChild(host);
+
+  refreshCases().then(function (r) {
+    clear(host);
+    if (!r.ok) {
+      host.className = "note wr";
+      host.appendChild(document.createTextNode(errText(r, "Case list")));
+      return;
+    }
+    var c = obj(r.data);
+    var cs = lst(c.cases);
+    host.className = "";
+    view.appendChild(panel("Case register",
+      table(["Case id", "Subject", "Band", "Risk", "Conf", "Verdict", "Status", "Created", "Evidence"],
+        cs.map(function (k) {
+          return {
+            attrs: { "class": "clickable", tabindex: "0", role: "button",
+                     "aria-label": "Investigate case " + String(k.id) },
+            cells: [h("td", { "class": "mono", text: trunc(String(k.id), 20) }),
+                    h("td", { text: String(k.subject || NODATA) }),
+                    h("td", null, bandPill(k.band)),
+                    h("td", { text: num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 1) }),
+                    h("td", { text: pct(k.confidence) }),
+                    h("td", { text: String(k.verdict || UNKNOWN) }),
+                    h("td", null, h("span", { "class": "pill " + (String(k.status) === "open" ? "p-amber" : "p-gray"), text: String(k.status || UNKNOWN) })),
+                    h("td", { "class": "mono", text: when(k.createdAt) }),
+                    h("td", { "class": "mono", text: k.evidenceHash ? trunc(String(k.evidenceHash), 14) : "MISSING" })]
+          };
+        }).map(function (row, i) {
+          var k = cs[i];
+          function open() { location.hash = "#/case/" + encodeURIComponent(k.id); }
+          row.attrs.onclick = open;
+          row.attrs.onkeydown = function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+          };
+          return row;
+        }),
+        ["No cases", "The backend holds no cases. A case is created by running an analysis with case creation enabled."], "tall"),
+      h("div", { "class": "top-r", "data-x": "1" },
+        h("span", { "class": "pill p-gray", text: "total " + count(c.total) + " · returned " + count(c.returned) }),
+        h("span", { "class": "pill p-gray", text: "page " + count(c.page) + " · size " + count(c.pageSize) }))));
+  });
+}
+
+/* ======================================================================
+   14. PAGE — INCIDENTS
+   Deliberately thin: there is no incident store in the backend.
+   ====================================================================== */
+function pageIncidents() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Incidents" }),
+        h("div", { "class": "sub", text: "Incident escalation is not implemented in this build. The counts below are derived from the case register the backend does hold, and are labelled as such." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-amber", text: NOCFG }),
+        btn("Open cases", function () { location.hash = "#/cases"; }, "sm")))));
+
+  view.appendChild(panel("Escalation", notCfg("Incident management",
+    "There is no incident entity, no escalation rule, no on-call roster and no ticketing integration in this build. No incident list is rendered because none can be produced.")));
+
+  view.appendChild(h("div", { "class": "g4" },
+    metric("Cases held", f.casesKnown ? count(f.totalCases) : UNKNOWN,
+      "backend case register", "b", !f.casesKnown),
+    metric("Open cases", f.casesKnown ? count(f.openCases) : UNKNOWN,
+      "status = open", "y", !f.casesKnown),
+    metric("High / critical", f.casesKnown ? count(f.highRisk) : UNKNOWN,
+      "band = HIGH or CRITICAL", "r", !f.casesKnown),
+    metric("Escalated incidents", NOCFG, "no incident entity exists", "y", true)));
+
+  view.appendChild(panel("Case-derived view",
+    h("div", null,
+      note("These rows are case records, not incidents. Nothing here has been triaged, assigned or escalated by this console."),
+      table(["Case", "Band", "Risk", "Status", "Evidence hash"],
+        f.cases.map(function (k) {
+          return { cells: [h("td", { "class": "mono", text: trunc(String(k.id), 22) }),
+                           h("td", null, bandPill(k.band)),
+                           h("td", { text: num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 1) }),
+                           h("td", { text: String(k.status || UNKNOWN) }),
+                           h("td", { "class": "mono", text: k.evidenceHash ? trunc(String(k.evidenceHash), 18) : "MISSING" })] };
+        }),
+        ["No cases", "The backend case register is empty."], "tall"))));
+}
+
+/* ======================================================================
+   15. PAGE — IOC EXPLORER
+   Indicators are read out of the case register. There is no feed to
+   subscribe to, so correlation is described rather than implied.
+   ====================================================================== */
+function pageIoc() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "IOC explorer" }),
+        h("div", { "class": "sub", text: "Indicators stored on cases in this deployment, plus any indicator the most recent analysis returned. Reputation is UNKNOWN for all of them: no feed is compiled in." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-gray", text: "Local store only" }),
+        btn("Refresh", refreshCases, "sm")))));
+
+  var rows = [];
+  var seen = {};
+  f.cases.forEach(function (k) {
+    lst(k.hopAddresses).forEach(function (ip) {
+      var key = "ip|" + ip;
+      if (seen[key]) { seen[key].n++; return; }
+      var r = { key: key, v: ip, type: "IP", src: "case record", cases: [k], n: 1, first: k.createdAt };
+      seen[key] = r; rows.push(r);
+    });
+    lst(k.urls).forEach(function (u) {
+      var key = "url|" + u;
+      if (seen[key]) { seen[key].n++; return; }
+      var r = { key: key, v: u, type: "URL", src: "case record", cases: [k], n: 1, first: k.createdAt };
+      seen[key] = r; rows.push(r);
+    });
+    lst(k.attachmentHashes).forEach(function (hh) {
+      var key = "hash|" + hh;
+      if (seen[key]) { seen[key].n++; return; }
+      var r = { key: key, v: hh, type: "HASH", src: "case record", cases: [k], n: 1, first: k.createdAt };
+      seen[key] = r; rows.push(r);
+    });
+    lst(k.addresses).forEach(function (ad) {
+      var key = "email|" + ad;
+      if (seen[key]) { seen[key].n++; return; }
+      var r = { key: key, v: ad, type: "EMAIL", src: "case record", cases: [k], n: 1, first: k.createdAt };
+      seen[key] = r; rows.push(r);
+    });
+  });
+  var at = state.analysis ? obj(state.analysis.attribution) : null;
+  lst(obj(at).indicators).forEach(function (i) {
+    var val = String(i.value || i.ip || "");
+    if (!val) return;
+    var key = "an|" + val;
+    if (seen[key]) { seen[key].n++; return; }
+    var r = { key: key, v: val, type: String(i.type || UNKNOWN), src: "last analysis", cases: [], n: 1, first: 0 };
+    seen[key] = r; rows.push(r);
+  });
+
+  view.appendChild(h("div", { "class": "g4" },
+    metric("Distinct indicators", f.casesKnown ? count(rows.length) : UNKNOWN,
+      "across the case register", "b", !f.casesKnown),
+    metric("IP addresses", f.casesKnown ? count(rows.filter(function (r) { return r.type === "IP"; }).length) : UNKNOWN,
+      "from relay hops", "y", !f.casesKnown),
+    metric("URLs", f.casesKnown ? count(rows.filter(function (r) { return r.type === "URL"; }).length) : UNKNOWN,
+      "from message body", "a", !f.casesKnown),
+    metric("Reputation", UNKNOWN, "no feed compiled in", "y", true)));
+
+  view.appendChild(panel("Indicator register", table(
+    ["Indicator", "Type", "Source", "Occurrences", "Cases", "First seen", "Reputation"],
+    rows.map(function (r) {
+      return {
+        attrs: { "class": "clickable", tabindex: "0", role: "button",
+                 "aria-label": "Open case for indicator " + String(r.v) },
+        cells: [h("td", { "class": "mono", text: trunc(String(r.v), 46) }),
+                h("td", null, h("span", { "class": "pill p-blue", text: r.type })),
+                h("td", { text: r.src }),
+                h("td", { text: count(r.n) }),
+                h("td", { text: r.cases.length ? trunc(r.cases.map(function (k) { return String(k.id); }).join(", "), 34) : NODATA }),
+                h("td", { "class": "mono", text: r.first ? when(r.first) : UNKNOWN }),
+                h("td", null, h("span", { "class": "pill p-gray", text: NOCFG }))]
+      };
+    }).map(function (row, i) {
+      var r = rows[i];
+      function open() {
+        if (r.cases.length) location.hash = "#/case/" + encodeURIComponent(r.cases[0].id);
+      }
+      row.attrs.onclick = open;
+      row.attrs.onkeydown = function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      };
+      return row;
+    }),
+    ["No indicators", "The case register holds no IP, URL, hash or address, and no analysis has been run in this session."], "tall")));
+
+  view.appendChild(panel("Enrichment reality", h("div", null,
+    notCfg("Reputation, geo and ASN",
+      "An indicator in this table is an observed string, nothing more. It is not known to be malicious, benign, or hosted in any particular country."),
+    notCfg("Passive DNS and historical resolution",
+      "No passive DNS source is compiled in, so first-seen and last-seen dates for an indicator cannot be established."),
+    note("Occurrence counts come from how many times the same string appears across the cases this backend holds. They are not a global sighting count."))));
+
+  if (state.analysis) {
+    var cb = h("div", { "class": "ibwrap" });
+    cb.appendChild(note("Local confusable enrichment result for the last analysis: " +
+      (f.enrichmentPresent ? "a match was returned." : "no match was returned."), f.enrichmentPresent ? "" : "nc"));
+    view.appendChild(panel("Last analysis enrichment", cb));
+  }
+}
+
+/* ======================================================================
+   16. PAGE — REPORTS
+   ====================================================================== */
+function pageReports() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Reports" }),
+        h("div", { "class": "sub", text: "Report generation is real for cases. Scheduled reporting, PDF export and distribution are not compiled into this build." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-blue", text: "STIX 2.1 · JSON" }),
+        btn("Refresh", refreshCases, "sm")))));
+
+  view.appendChild(panel("Export a case report", h("div", null,
+    table(["Case", "Band", "Risk", "Actions"],
+      f.cases.map(function (k) {
+        return {
+          attrs: { "class": "clickable", tabindex: "0", role: "button",
+                   "aria-label": "Open report for case " + String(k.id) },
+          cells: [h("td", { "class": "mono", text: trunc(String(k.id), 24) }),
+                  h("td", null, bandPill(k.band)),
+                  h("td", { text: num(k.riskFinal !== undefined ? k.riskFinal : k.risk, 1) }),
+                  h("td", null,
+                    h("span", { "class": "pill p-blue", text: "STIX" }),
+                    document.createTextNode(" "),
+                    h("span", { "class": "pill p-gray", text: "16-section report" }))]
+        };
+      }).map(function (row, i) {
+        var k = f.cases[i];
+        function open() { location.hash = "#/case/" + encodeURIComponent(k.id); }
+        row.attrs.onclick = open;
+        row.attrs.onkeydown = function (e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+        };
+        return row;
+      }),
+      ["No reports", "A report exists per case, and there are no cases in this backend."], "tall"),
+    h("div", { "class": "top-r" },
+      btn("Export last analysis JSON", function () {
+        if (!state.analysis) { toast("No analysis to export yet.", "warn"); return; }
+        downloadJSON(state.analysis, "analysis.json");
+      }, "", !state.analysis),
+      btn("Download bundle schema info", function () {
+toast("STIX 2.1 bundle objects are listed inside each case report.", "info");
+      }, "")))));
+
+  view.appendChild(panel("Not available", h("div", null,
+    notCfg("Scheduled and recurring reports", "No scheduler, cron or background reporter exists in this build."),
+    notCfg("PDF and DOCX rendering", "No document renderer is compiled in. Reports are exported as JSON and STIX only."),
+    notCfg("Email distribution", "This console sends no mail and holds no SMTP configuration."),
+    notCfg("Threat-intelligence sections", "No feed is compiled in, so a report cannot contain feed verdicts or confidence from a provider."),
+    note("Every report this build produces is assembled from fields the backend returned. Nothing is filled in on the client."))));
+
+  if (state.analysis) {
+    var fbn = obj(state.analysis.featureBreakdown);
+    view.appendChild(panel("Last analysis at a glance", kv([
+      ["Document", state.analysis.documentId, "mono"],
+      ["Message id", state.analysis.messageId || NODATA, "mono"],
+      ["Verdict", String(obj(state.analysis.model).verdict || UNKNOWN)],
+      ["Risk", num(obj(state.analysis.model).riskFinal, 2)],
+      ["Feature families scored", count(lst(fbn.families).length)],
+      ["Case", state.analysis.caseId || (state.analysis.model.caseNotCreated || "none — " + String(state.analysis.model.caseCreationEnabled ? "not requested" : "case creation disabled"))],
+      ["Model version", String(obj(state.analysis.model).modelVersion || UNKNOWN), "mono"]
+    ])));
+  }
+}
+
+/* ======================================================================
+   17. PAGE — AUDIT
+   ====================================================================== */
+function pageAudit() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Audit chain" }),
+        h("div", { "class": "sub", text: "Hash-linked append-only log with Ed25519 checkpoints. Verification reads the chain; it never writes to it." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-gray", text: "Log: " + String(f.headHash ? "audit.ndjson" : "audit.ndjson") }),
+        btn("Verify now", function () {
+          refreshAudit().then(function (r) {
+            pushEvent(r.ok ? "INFO" : "HIGH", "audit verified",
+              r.ok ? (count(obj(r.data).records) + " record(s)") : errText(r, "Verification"), r.status);
+            renderView();
+            toast(r.ok ? "Verification complete." : errText(r, "Verification"), r.ok ? "ok" : "warn");
+          });
+        }, "sm")))));
+
+  var aud = auditBlock(state.audit);
+
+  view.appendChild(h("div", { "class": "g4" },
+    metric("Records", f.auditKnown ? count(f.records) : UNKNOWN, "append-only entries", "b", !f.auditKnown),
+    metric("Chain intact", f.auditKnown ? (f.chainIntact ? "YES" : "NO") : UNKNOWN,
+      "hash links verified", f.auditKnown ? (f.chainIntact ? "g" : "r") : "y", !f.auditKnown),
+    metric("Assurance", f.auditKnown ? String(f.assurance) : UNKNOWN,
+      f.auditKnown && f.sigConfigured ? "Ed25519 checkpoint" : "no signing key", 
+      f.auditKnown ? (String(f.assurance) === "SIGNED" ? "g" : String(f.assurance) === "TAMPERED" ? "r" : "y") : "y", !f.auditKnown),
+    metric("Last signed index", f.auditKnown ? count(f.lastSignedIndex) : UNKNOWN,
+      f.auditKnown && f.signEveryN ? ("checkpoint every " + count(f.signEveryN)) : "unsigned", "y", !f.auditKnown)));
+
+  view.appendChild(panel("Verification result", aud));
+
+  view.appendChild(panel("Head and checkpoint", kv([
+    ["Head hash", f.headHash || UNKNOWN, "mono"],
+    ["Last signed index", f.lastSignedIndex],
+    ["Last signature valid", f.auditKnown ? (typeof f.lastSignatureValid === "boolean" ? (f.lastSignatureValid ? "YES" : "NO") : UNKNOWN) : UNKNOWN],
+    ["Head signature valid", f.auditKnown ? (typeof f.headSignatureValid === "boolean" ? (f.headSignatureValid ? "YES" : "NO") : UNKNOWN) : UNKNOWN],
+    ["Signing key configured", f.auditKnown ? (f.sigConfigured ? "YES" : "NO") : UNKNOWN],
+    ["Records appended", f.auditKnown ? count(f.records) : UNKNOWN],
+    ["Verification reason", f.auditKnown ? (f.reason || "none reported") : UNKNOWN]
+  ])));
+
+  view.appendChild(panel("How to read assurance", h("div", null,
+    [
+      ["SIGNED", "The head index carries an Ed25519 signature that verifies against the stored public key."],
+      ["UNSIGNED", "The chain is intact, but the current head is past the last checkpoint, so it has no signature yet."],
+      ["TAMPERED", "A hash link or a signature does not verify. The record set has been altered."],
+      ["NOT CONFIGURED", "No signing key exists in this data directory, so the chain is hash-linked but unsigned."]
+    ].map(function (p) {
+      return h("div", { "class": "find" },
+        h("div", { "class": "find-h" },
+          h("span", { "class": "find-t", text: p.h }),
+          h("span", { "class": "pill " + (p.h === "SIGNED" ? "p-green" : p.h === "TAMPERED" ? "p-red" : p.h === "UNSIGNED" ? "p-amber" : "p-gray"), text: p.h })),
+        h("div", { "class": "find-b", text: p.v }));
+    })),
+    note("An UNSIGNED chain between checkpoints is the expected steady state, not a fault. Assurance only becomes SIGNED at a checkpoint boundary.")));
+
+  view.appendChild(panel("Log contents", notCfg("Raw log viewer",
+    "This build exposes chain verification, not a log-read endpoint. Individual audit records are not retrievable through the API, so no record table is rendered."),
+    note("The client cannot fetch the log file either: the server serves the console and the API under the same CSP, and reading data/ from a browser would bypass the permission model entirely.")));
+
+  view.appendChild(panel("Session actions taken here", h("div", null,
+    kv([
+      ["Analyses this session", count(state.counters.analyzed)],
+      ["Cases opened this session", count(state.counters.openedCase)],
+      ["Reports generated this session", count(state.counters.reports)],
+      ["Verifications this session", count(state.counters.verifies)]
+    ]),
+    note("These counters describe this browser session only. They are not audit records and are not written to the chain by this console."))));
+
+  if (state.events.length) {
+    view.appendChild(panel("This session's requests", h("div", { "id": "evList" })));
+    paintEvents();
+  }
+}
+
+/* ======================================================================
+   18. PAGE — SETTINGS
+   Configuration is reported, never written. There is no settings API.
+   ====================================================================== */
+function pageSettings() {
+  var view = clear(document.getElementById("view"));
+  var f = facts();
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: "Settings" }),
+        h("div", { "class": "sub", text: "What this build actually is. Every line is read from the running service or from the console itself — none of it is editable, because there is no configuration API." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-gray", text: "Read-only" })))));
+
+  view.appendChild(h("div", { "class": "g4" },
+    metric("Session", state.token ? "AUTHENTICATED" : "SIGNED OUT",
+      state.user ? (state.user + " · " + state.roles.join(" / ")) : "no token held", "b", !state.token),
+    metric("Signing cadence", f.signEveryN !== null ? count(f.signEveryN) : UNKNOWN,
+      "records per checkpoint", "y", f.signEveryN === null),
+    metric("Model", state.analysis ? String(obj(state.analysis.model).modelVersion) : "NOT EXERCISED",
+      state.analysis ? String(obj(state.analysis.model).weightsSource) : "no analysis this session", "a", !state.analysis),
+    metric("Console data", "LIVE", state.lastOkAt ? ("last 200 at " + when(state.lastOkAt)) : "no successful request yet",
+      state.live ? "g" : "y")));
+
+  view.appendChild(panel("Console", kv([
+    ["User agent", navigator.userAgent],
+    ["Screen", window.innerWidth + " × " + window.innerHeight + " CSS px"],
+    ["Reduced motion", window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches ? "requested" : "no preference"],
+    ["Body size limit", Math.round(MAX_BODY / 1024) + " KB"],
+    ["Page size", String(PAGE_SIZE) + " cases"],
+    ["Routes in this console", "hash router, " + String(NAV.reduce(function (n, s) { return n + s.items.length; }, 0)) + " nav entries"]
+  ])));
+
+  view.appendChild(panel("Security posture of this console", h("div", null,
+    kv([
+      ["Content Security Policy", "nonce-based, no inline handlers, no external origins"],
+      ["Rendering", "textContent only — raw HTML insertion throws"],
+      ["External requests", "none; this console never contacts a third party"],
+      ["Credentials", "held in memory for this tab only; never written to storage"],
+      ["Email content", "treated as hostile input; never rendered as markup"],
+      ["Suspicious URLs", "shown as text, never linked or fetched"],
+      ["Inline styles", "none; every colour and geometry is an attribute or class"]
+    ]),
+    note("The console holds no analytics, no telemetry and no third-party script. Opening the network panel shows only requests to this origin."))));
+
+  view.appendChild(panel("Not configurable", h("div", null,
+    notCfg("Threshold tuning", "Risk thresholds and model weights are compiled into the backend. There is no API to change them from a browser."),
+    notCfg("Provider credentials", "No provider exists in this build, so no key can be entered here."),
+    notCfg("Retention and quotas", "Retention policy and storage limits are not exposed as settings."),
+    notCfg("User management", "Accounts are provisioned by the backend's data directory, not through this console."))));
+
+  view.appendChild(panel("Session", h("div", { "class": "top-r" },
+    btn(state.token ? "Sign out" : "Sign in", function () {
+      if (state.token) { doSignOut(); toast("Signed out. The token was discarded.", "ok"); }
+      else openLogin();
+    }, state.token ? "" : "pri"),
+    btn("Re-verify audit chain", function () {
+      refreshAudit().then(function (r) {
+        pushEvent(r.ok ? "INFO" : "HIGH", "audit verified", r.ok ? "chain intact" : errText(r, "Verification"), r.status);
+        renderView();
+      });
+    }, ""))));
+}
+
+/* ======================================================================
+   19. PAGE — MODULE PLACEHOLDER
+   Listed modules with no implementation resolve here. No dead links.
+   ====================================================================== */
+function pageModule(id) {
+  var view = clear(document.getElementById("view"));
+  var it = navFor(id);
+  var label = it ? it.lb : id;
+
+  var reasons = {
+    "mod-spam": "No spam scoring, Bayes classifier or bulk-mailbox filtering exists in this build. The backend computes a single risk score for a single submitted message and has no spam corpus.",
+    "mod-dns": "No DNS resolver, no DNSSEC validation, no zone transfer and no DNS-log correlation is compiled in. Nothing here can query DNS.",
+    "mod-tls": "No TLS interception sensor, no certificate store and no cipher inspection exist. The console never sees transport.",
+    "mod-ddos": "No traffic telemetry, no NetFlow, no packet capture and no baseline exist. There is no data source to analyse.",
+    "mod-cf": "No Cloudflare API client, token or zone binding is compiled in.",
+    "mod-ti": "No threat-intelligence feed, key or client exists in this build. An indicator's reputation is UNKNOWN, never inferred."
+  };
+
+  view.appendChild(h("div", { "class": "ph" },
+    h("div", { "class": "ph-row" },
+      h("div", null,
+        h("h1", { text: label }),
+        h("div", { "class": "sub", text: "Listed in navigation because it belongs in an analyst's console. It is not implemented, and this page says exactly why." })),
+      h("div", { "class": "top-r" },
+        h("span", { "class": "pill p-amber", text: NOCFG }),
+        btn("Command center", function () { location.hash = "#/command-center"; }, "sm")))));
+
+  view.appendChild(panel("Module status", h("div", null,
+    h("div", { "class": "empty" },
+      h("b", { text: label + " " + NOCFG }),
+      h("div", { text: reasons[id] || "No implementation for this module is compiled into this build." })),
+    note("Nothing on this page is stubbed to look functional. A placeholder that renders plausible-looking data would be worse than an honest gap, so there is no data here to render."))));
+
+  view.appendChild(panel("What this build does cover", h("div", null,
+    table(["Capability", "Where it lives"], [
+      ["Header and MIME parsing", "Email analysis"],
+      ["SPF / DKIM / DMARC evaluation", "Email analysis"],
+      ["Relay path extraction", "Case investigation"],
+      ["URL and attachment-hash extraction", "Email analysis"],
+      ["Hand-set risk scoring", "Email analysis"],
+      ["Local campaign correlation", "Email analysis"],
+      ["Evidence hashing per case", "Case investigation"],
+      ["STIX 2.1 export", "Reports"],
+      ["Hash-linked audit chain with Ed25519 checkpoints", "Audit"]
+    ].map(function (r) {
+      var target = r[1] === "Audit" ? "#/audit" : r[1] === "Reports" ? "#/reports" :
+                   r[1] === "Case investigation" ? "#/cases" : "#/analysis";
+      return { cells: [h("td", { text: r[0] }),
+                       h("td", null, h("a", { href: "#" + target.slice(1), "class": "lnk", text: r[1] }))] };
+    })))));
+}
+
+/* ======================================================================
+   20. EXPORT — real downloads, no server round-trip where not needed
+   ====================================================================== */
+function download(url, filename) {
+  if (!state.token) { toast("Sign in to export.", "warn"); return; }
+  api(url).then(function (r) {
+    if (!r.ok) { pushEvent("HIGH", "export failed", url, r.status); toast(errText(r, "Export"), "warn"); return; }
+    saveBlob(r.text, filename, "application/json");
+    pushEvent("LOW", "export generated", filename, r.status);
+    toast("Saved " + filename, "ok");
+  });
+}
+function downloadJSON(obj, filename) {
+  saveBlob(JSON.stringify(obj, null, 2), filename, "application/json");
+  pushEvent("LOW", "export generated", filename, "200");
+  toast("Saved " + filename, "ok");
+}
+function downloadReport(rep, id) {
+  downloadJSON(rep, "case-" + id + ".report.json");
+}
+function saveBlob(text, filename, mime) {
+  var blob = new Blob([text], { type: mime });
+  var url = URL.createObjectURL(blob);
+  var a = h("a", { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+}
+
+/* ======================================================================
+   21. SEARCH — honest about what the backend supports
+   The backend has no search endpoint. The console searches the pages it
+   has already fetched, and says so rather than implying a server index.
+   ====================================================================== */
+function runSearch(q) {
+  var host = document.getElementById("searchOut");
+  if (!host) return;
+  clear(host);
+  var term = String(q || "").trim().toLowerCase();
+  if (term.length < 2) {
+    host.appendChild(note("Type at least two characters. Search runs over the case register already loaded in this tab."));
+    return;
+  }
+  var hits = [];
+  lst(obj(state.cases).cases).forEach(function (k) {
+    [["case id", String(k.id)], ["subject", String(k.subject || "")],
+     ["document", String(k.documentId || "")], ["message", String(k.messageId || "")],
+     ["band", String(k.band || "")], ["verdict", String(k.verdict || "")],
+     ["evidence hash", String(k.evidenceHash || "")]].forEach(function (p) {
+      if (p[1] && p[1].toLowerCase().indexOf(term) >= 0) {
+        hits.push({ kind: "case", id: k.id, where: p[0], val: p[1] });
+      }
+    });
+    lst(k.domains).forEach(function (d) {
+      if (String(d).toLowerCase().indexOf(term) >= 0) hits.push({ kind: "case", id: k.id, where: "domain", val: d });
+    });
+    lst(k.urls).forEach(function (u) {
+      if (String(u).toLowerCase().indexOf(term) >= 0) hits.push({ kind: "case", id: k.id, where: "url", val: u });
+    });
+    lst(k.hopAddresses).forEach(function (ip) {
+      if (String(ip).toLowerCase().indexOf(term) >= 0) hits.push({ kind: "case", id: k.id, where: "ip", val: ip });
+    });
+  });
+  var a = state.analysis;
+  if (a) {
+    [["document id", String(a.documentId || "")], ["subject", String(a.subject || "")],
+     ["message id", String(a.messageId || "")]].forEach(function (p) {
+      if (p[1] && p[1].toLowerCase().indexOf(term) >= 0)
+        hits.push({ kind: "analysis", id: "", where: p[0], val: p[1] });
+    });
+  }
+
+  host.appendChild(h("div", { "class": "find-h" },
+    h("span", { "class": "find-t", text: hits.length + " match(es) in loaded data" }),
+    h("span", { "class": "pill p-gray", text: "client-side, case register only" })));
+
+  if (!hits.length) {
+    host.appendChild(note("No match in the case register loaded in this tab. This console does not query a server-side search index, because the backend exposes none.", "nc"));
+    return;
+  }
+  var tb = h("tbody");
+  hits.slice(0, 40).forEach(function (hit) {
+    var tr = h("tr", { "class": hit.kind === "case" ? "clickable" : "", tabindex: hit.kind === "case" ? "0" : null,
+                        role: hit.kind === "case" ? "button" : null },
+      h("td", null, h("span", { "class": "pill p-blue", text: hit.kind })),
+      h("td", { text: hit.where }),
+      h("td", { "class": "mono", text: trunc(String(hit.val), 52) }),
+      h("td", { "class": "mono", text: hit.kind === "case" ? trunc(String(hit.id), 20) : NODATA }));
+    if (hit.kind === "case") {
+      function open() { location.hash = "#/case/" + encodeURIComponent(hit.id); }
+      tr.addEventListener("click", open);
+      tr.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      });
+    }
+    tb.appendChild(tr);
+  });
+  host.appendChild(h("div", { "class": "twrap" },
+    h("table", { "class": "t" },
+      h("thead", null, h("tr", null, h("th", { text: "In" }), h("th", { text: "Field" }),
+        h("th", { text: "Value" }), h("th", { text: "Case" }))), tb)));
+  if (hits.length > 40) host.appendChild(note("Showing the first 40 of " + hits.length + " matches."));
+}
+
+/* ======================================================================
+   22. TOAST — one line, self-clearing, never blocking
+   ====================================================================== */
+var toastT = null;
+function toast(msg, kind) {
+  var el = document.getElementById("toast");
+  if (!el) return;
+  el.className = "toast on" + (kind ? " " + kind : "");
+  clear(el).appendChild(h("b", { text: msg }));
+  if (toastT) clearTimeout(toastT);
+  toastT = setTimeout(function () { el.className = "toast"; clear(el); }, 4200);
+}
+
+/* ======================================================================
+   23. AUTH
+   Credentials go to the backend over Basic auth on a protected endpoint.
+   They are never stored, never logged to console, never put in a URL.
+   ====================================================================== */
+function openLogin() {
+  var back = h("div", { "class": "lcard" });
+  var u = h("input", { "class": "inp", id: "lu", type: "text", autocomplete: "username",
+                       placeholder: "analyst", spellcheck: "false" });
+  var p = h("input", { "class": "inp", id: "lp", type: "password", autocomplete: "current-password",
+                       placeholder: "••••••••" });
+  var msg = h("div", { "class": "note", text: "Accounts live in the backend data directory. Enter your console credentials to obtain a session token." });
+
+  function submit() {
+    var user = u.value, pass = p.value;
+    if (!user || !pass) { msg.className = "note wr"; msg.textContent = "Both fields are required."; return; }
+    msg.className = "note";
+    msg.textContent = "Authenticating…";
+    /* A GET on a protected route with Basic credentials is enough to prove
+       the account, and it returns the session token header. */
+    api("/api/cases?page=1&pageSize=1", { basic: { user: user, pass: pass } }).then(function (r) {
+      if (r.ok && r.token) {
+        state.token = r.token;
+        state.user = user;
+        p.value = "";
+        msg.className = "note";
+        toast("Signed in as " + user, "ok");
+        pushEvent("INFO", "signed in", user, r.status);
+        closeLogin();
+        paintTop();
+        refreshAll().then(renderView);
+        return;
+      }
+      if (r.status === 429) {
+        msg.className = "note wr";
+        msg.textContent = "Account locked. The backend asks you to retry after " +
+          (r.retryAfter ? r.retryAfter + " seconds" : "a delay") + ".";
+        return;
+      }
+      msg.className = "note wr";
+      msg.textContent = r.status === 401 || r.status === 403
+        ? "Those credentials were rejected by the backend."
+        : errText(r, "Sign-in");
+    });
+  }
+
+  back.appendChild(h("div", { "class": "lhead" },
+    h("div", { "class": "lmark", "aria-hidden": "true", text: "CS" }),
+    h("div", null,
+      h("h2", { text: "Sign in to Cipher Squad" }),
+      h("div", { "class": "sub", text: "Local email threat forensics console" }))));
+  back.appendChild(kv([["Endpoint", "Basic auth on a protected route", "mono"],
+                       ["Session", "Bearer token held in memory for this tab", "mono"],
+                       ["Storage", "none — no cookies, no localStorage, no persistence", "mono"]]));
+  back.appendChild(h("div", { "class": "g2" },
+    h("div", null, h("div", { "class": "nav-sect" }, h("span", { text: "Username" })), u),
+    h("div", null, h("div", { "class": "nav-sect" }, h("span", { text: "Password" })), p)));
+  back.appendChild(msg);
+  back.appendChild(h("div", { "class": "top-r" },
+    btn("Sign in", submit, "pri"),
+    btn("Cancel", closeLogin, "")));
+  back.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); submit(); }
+  });
+
+  var m = document.getElementById("modal");
+  clear(m).appendChild(back);
+  m.className = "modal on";
+  m.setAttribute("aria-hidden", "false");
+  setTimeout(function () { u.focus(); }, 30);
+}
+function closeLogin() {
+  var m = document.getElementById("modal");
+  m.className = "modal";
+  m.setAttribute("aria-hidden", "true");
+  clear(m);
+}
+function doSignOut() {
+  state.token = null;
+  state.user = null;
+  state.roles = [];
+  state.analysis = null;
+  state.report = null;
+  state.audit = null;
+  state.cases = null;
+  state.counters = { analyzed: 0, openedCase: 0, iocSeen: 0, reports: 0, verifies: 0 };
+  pushEvent("INFO", "signed out", "token discarded", "");
+  paintTop();
+  /* Token is gone, so refreshAll would 401. Audit verification is public. */
+  refreshAudit().then(renderView);
+}
+function requireAuth(what) {
+  if (state.token) return true;
+  toast("Sign in to " + what + ".", "warn");
+  openLogin();
+  return false;
+}
+
+/* ======================================================================
+   24. ROUTER + PAINT
+   ====================================================================== */
+function parseRoute() {
+  var raw = String(location.hash || "").replace(/^#\/?/, "");
+  var parts = raw.split("/").filter(function (x) { return x.length; });
+  if (!parts.length) return { name: "command-center", arg: null };
+  var head = parts[0];
+  if (head === "case") return { name: "case", arg: decodeURIComponent(parts[1] || "") };
+  if (head.indexOf("mod-") === 0) return { name: "module", arg: head };
+  if (NAV.some(function (sec) { return sec.items.some(function (i) { return i.id === head; }); }))
+    return { name: head, arg: null };
+  return { name: "command-center", arg: null };
+}
+function renderView() {
+  var r = parseRoute();
+  state.route = r;
+  paintNav();
+  paintCrumb();
+  closeSearch();
+  switch (r.name) {
+    case "command-center": pageCommandCenter(); break;
+    case "workspace": pageWorkspace(); break;
+    case "analysis": pageAnalysis(); break;
+    case "toolkit": pageToolkit(); break;
+    case "cases": pageCases(); break;
+    case "incidents": pageIncidents(); break;
+    case "ioc": pageIoc(); break;
+    case "reports": pageReports(); break;
+    case "audit": pageAudit(); break;
+    case "settings": pageSettings(); break;
+    case "case": r.arg ? pageCase(r.arg) : pageCases(); break;
+    case "module": pageModule(r.arg); break;
+    default: pageCommandCenter();
+  }
+  paintTop();
+}
+/* renderView() only paints what is already in state. Fetching belongs to the
+   caller, otherwise a refresh would re-enter renderView without end. */
+function route() {
+  if (state.token) return refreshAll().then(renderView);
+  return refreshAudit().then(renderView);
+}
+function openSearch() {
+  var o = document.getElementById("searchOut");
+  o.className = "sout on";
+  document.getElementById("q").focus();
+}
+function closeSearch() {
+  var o = document.getElementById("searchOut");
+  o.className = "sout";
+  clear(o);
+}
+
+/* ======================================================================
+   25. BOOT
+   ====================================================================== */
+function wire() {
+  window.addEventListener("hashchange", route);
+
+  var nav = document.getElementById("navtoggle");
+  var sb = document.getElementById("sidebar");
+  var sc = document.getElementById("scrim");
+  nav.addEventListener("click", function () {
+    var on = sb.classList.toggle("open");
+    sc.classList.toggle("on", on);
+    nav.setAttribute("aria-expanded", on ? "true" : "false");
+  });
+  sc.addEventListener("click", function () {
+    sb.classList.remove("open"); sc.classList.remove("on");
+  });
+
+  document.getElementById("btnOut").addEventListener("click", function () {
+    doSignOut();
+    toast("Signed out. The token was discarded.", "ok");
+  });
+  document.getElementById("who").addEventListener("click", function () {
+    if (state.token) location.hash = "#/settings";
+    else openLogin();
+  });
+
+  var q = document.getElementById("q");
+  var qt = null;
+  q.addEventListener("input", function () {
+    if (qt) clearTimeout(qt);
+    qt = setTimeout(function () {
+      if (String(q.value).trim().length >= 2) { openSearch(); runSearch(q.value); }
+      else closeSearch();
+    }, 180);
+  });
+  q.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { q.value = ""; closeSearch(); q.blur(); }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      var m = document.getElementById("modal");
+      if (m.className === "modal on") closeLogin();
+      else closeSearch();
+    }
+    if (e.key === "/" && document.activeElement && document.activeElement.tagName !== "INPUT" &&
+        document.activeElement.tagName !== "TEXTAREA") {
+      e.preventDefault(); openSearch();
+    }
+  });
+
+  setInterval(function () {
+    document.getElementById("utc").textContent = utcNow();
+  }, 1000);
+
+  /* liveness poll. A 401 proves the service is up, so it counts as live. */
+  setInterval(function () {
+    if (state.token) refreshAudit();
+  }, 30000);
+}
+
+function boot() {
+  buildNav();
+  wire();
+  document.getElementById("utc").textContent = utcNow();
+  if (!location.hash) location.hash = "#/command-center";
+  /* The public route returns 200 without credentials, so a first successful
+     call marks the service live even for an anonymous console load. */
+  route();
+}
+boot();
+})();
+</script>
+</body>
+</html>
