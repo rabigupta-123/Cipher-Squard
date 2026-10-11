@@ -1,0 +1,260 @@
+# confusables.tsv - character folding table for phishing lookalike detection.
+#
+# SOURCE
+#   Primary reference: Unicode Standard Annex #39 (UTS #39), "Unicode Security Mechanisms",
+#   section 4 confusables data: https://www.unicode.org/Public/security/latest/confusables.txt
+#
+#   HONESTY NOTE - this is a hand-curated TRANSCRIPTION of the high-value subset, not a
+#   verified machine extract. Phase 1 runs offline, so confusables.txt was not fetched and
+#   diffed against these rows. Each row states the code point it claims to map, so the table
+#   can be audited row by row against the published file. The codepoint is the
+#   authoritative disambiguator; the UTS #39 name in the note is descriptive.
+#   Rows not drawn from UTS #39 are marked `leet` in the script column and are listed as
+#   such in the header below. Nothing here is a bulk import: an unreviewed 6k-entry table
+#   would be an unaccountable input to a lookalike score.
+#
+#   Why not embed the full file: zero third-party dependencies (ARCHITECTURE.md L215), and a
+#   curated set stays reviewable. A missing mapping degrades detection recall slightly; it
+#   cannot corrupt a score, because every folded character still passes through the same
+#   arithmetic as an unfolded one.
+#
+# NON-UTS ROWS (leetspeak digit/letter substitution, standard in phishing domains)
+#   0->o 1->l 3->e 4->a 5->s 7->t 8->b 6->g 9->g
+#   These exist so that "paypa1.com" and "paypal.com" reduce to one skeleton. Skeletons are
+#   used only for lookalike *distance* and registry *equivalence*, never for display or for
+#   any address that is sent to, clicked, or replied to.
+#
+# FORMAT (tab-separated; no tab characters inside any field)
+#   col 1  source  - one code point, or the literal text "U+XXXX"
+#   col 2  target  - the ASCII replacement; may be more than one character
+#                    ("bl" for Cyrillic yery, as in UTS #39)
+#   col 3  script  - origin script of the source, drives the mixed_script rule
+#   col 4  note    - short justification
+#
+# INVARIANTS - both enforced at load time by TextNormalizer.loadMap()
+#   1. normalise() is IDEMPOTENT: folding the target string must return it unchanged.
+#      TextNormalizer.verifyIdempotent() checks this for every row and refuses to load a
+#      table that violates it. This is what keeps the domain registry's add-then-compare
+#      path correct.
+#   2. No two rows may map the same source to different targets. A conflict is a load error,
+#      not a last-one-wins overwrite, because a silently shadowed row is an unlogged input.
+#
+# Lines beginning with '#' and blank lines are ignored.
+
+# --- Cyrillic lowercase -> Latin. UTS #39 ---------------------------------
+U+0430	a	Cyr	CYRILLIC SMALL LETTER A
+U+0432	b	Cyr	CYRILLIC SMALL LETTER VE; reads as b
+U+0435	e	Cyr	CYRILLIC SMALL LETTER IE
+U+043A	k	Cyr	CYRILLIC SMALL LETTER KA
+U+043C	m	Cyr	CYRILLIC SMALL LETTER EM
+U+043D	h	Cyr	CYRILLIC SMALL LETTER EN; reads as h
+U+043E	o	Cyr	CYRILLIC SMALL LETTER O
+U+0440	p	Cyr	CYRILLIC SMALL LETTER ER; reads as p
+U+0441	c	Cyr	CYRILLIC SMALL LETTER ES
+U+0442	t	Cyr	CYRILLIC SMALL LETTER TE
+U+0443	y	Cyr	CYRILLIC SMALL LETTER U
+U+0445	x	Cyr	CYRILLIC SMALL LETTER HA
+U+0433	r	Cyr	CYRILLIC SMALL LETTER GHE; reads as r in several faces
+U+0434	d	Cyr	CYRILLIC SMALL LETTER DE
+U+043F	n	Cyr	CYRILLIC SMALL LETTER PE
+U+0446	u	Cyr	CYRILLIC SMALL LETTER TSE
+U+0447	q	Cyr	CYRILLIC SMALL LETTER CHE
+U+0448	w	Cyr	CYRILLIC SMALL LETTER SHA
+U+044B	bl	Cyr	CYRILLIC SMALL LETTER YERY; two-char target as in UTS #39
+U+0438	u	Cyr	CYRILLIC SMALL LETTER I; reads as u
+U+0439	u	Cyr	CYRILLIC SMALL LETTER SHORT I; reads as u
+U+043B	n	Cyr	CYRILLIC SMALL LETTER EL; reads as n
+# NOTE: U+0437 CYRILLIC SMALL LETTER ZE looks like the digit 3, which UTS #39 does map. It is
+# DELIBERATELY ABSENT here. Folding it to '3' collides with the leet row 3->e, so the fold
+# would chain ZE -> 3 -> e and the result would no longer resemble the input. Dropping the row
+# costs a little recall on a character attackers do not actually use; keeping it would produce
+# a wrong skeleton. The load-time idempotence check in TextNormalizer rejects such a row, which
+# is how this was found.
+
+# --- Cyrillic uppercase -> Latin. UTS #39 ---------------------------------
+U+0410	a	Cyr	CYRILLIC CAPITAL LETTER A
+U+0412	b	Cyr	CYRILLIC CAPITAL LETTER VE
+U+0415	e	Cyr	CYRILLIC CAPITAL LETTER IE
+U+041A	k	Cyr	CYRILLIC CAPITAL LETTER KA
+U+041C	m	Cyr	CYRILLIC CAPITAL LETTER EM
+U+041D	h	Cyr	CYRILLIC CAPITAL LETTER EN
+U+041E	o	Cyr	CYRILLIC CAPITAL LETTER O
+U+0420	p	Cyr	CYRILLIC CAPITAL LETTER ER
+U+0421	c	Cyr	CYRILLIC CAPITAL LETTER ES
+U+0422	t	Cyr	CYRILLIC CAPITAL LETTER TE
+U+0423	y	Cyr	CYRILLIC CAPITAL LETTER U
+U+0425	x	Cyr	CYRILLIC CAPITAL LETTER HA
+U+0413	r	Cyr	CYRILLIC CAPITAL LETTER GHE
+U+0414	d	Cyr	CYRILLIC CAPITAL LETTER DE
+U+041F	n	Cyr	CYRILLIC CAPITAL LETTER PE
+U+0426	u	Cyr	CYRILLIC CAPITAL LETTER TSE
+U+0427	q	Cyr	CYRILLIC CAPITAL LETTER CHE
+U+0428	w	Cyr	CYRILLIC CAPITAL LETTER SHA
+U+042B	bl	Cyr	CYRILLIC CAPITAL LETTER YERY
+U+0418	u	Cyr	CYRILLIC CAPITAL LETTER I
+U+0419	u	Cyr	CYRILLIC CAPITAL LETTER SHORT I
+U+041B	n	Cyr	CYRILLIC CAPITAL LETTER EL
+# U+0417 CYRILLIC CAPITAL LETTER ZE omitted for the same reason as U+0437 above: 3 -> e chains.
+
+# --- Cyrillic singletons and mixed-case letters. UTS #39 -----------------
+U+0455	s	Cyr	CYRILLIC SMALL LETTER DZE
+U+0456	i	Cyr	CYRILLIC SMALL LETTER BYELORUSSIAN-UKRAINIAN I
+U+0458	j	Cyr	CYRILLIC SMALL LETTER JE
+U+04BB	h	Cyr	CYRILLIC SMALL LETTER SHHA
+U+0405	s	Cyr	CYRILLIC CAPITAL LETTER DZE
+U+0406	i	Cyr	CYRILLIC CAPITAL LETTER BYELORUSSIAN-UKRAINIAN I
+U+0408	j	Cyr	CYRILLIC CAPITAL LETTER JE
+U+040B	h	Cyr	CYRILLIC CAPITAL LETTER SHHA
+U+0501	d	Cyr	CYRILLIC SMALL LETTER KOMI DE
+U+0461	w	Cyr	CYRILLIC SMALL LETTER OMEGA
+# U+04CF CYRILLIC SMALL LETTER PALOCHKA omitted: UTS #39 maps it to the digit 1, which collides
+# with the leet row 1 -> l. Same chaining hazard as the ZE rows.
+
+# --- Greek lowercase -> Latin. UTS #39 ------------------------------------
+U+03B1	a	Grek	GREEK SMALL LETTER ALPHA
+U+03B2	b	Grek	GREEK SMALL LETTER BETA
+U+03B5	e	Grek	GREEK SMALL LETTER EPSILON
+U+03B7	n	Grek	GREEK SMALL LETTER ETA
+U+03B9	i	Grek	GREEK SMALL LETTER IOTA
+U+03BA	k	Grek	GREEK SMALL LETTER KAPPA
+U+03BD	v	Grek	GREEK SMALL LETTER NU
+U+03BF	o	Grek	GREEK SMALL LETTER OMICRON
+U+03C1	p	Grek	GREEK SMALL LETTER RHO
+U+03C3	s	Grek	GREEK SMALL LETTER SIGMA
+U+03C4	t	Grek	GREEK SMALL LETTER TAU
+U+03C5	y	Grek	GREEK SMALL LETTER UPSILON; mapped to y not u - upsilon is the ancestor of Latin y, and collapsing it to u let the Greek spelling of a brand fold to a DIFFERENT skeleton than the Latin one
+U+03C7	x	Grek	GREEK SMALL LETTER CHI
+U+03B3	y	Grek	GREEK SMALL LETTER GAMMA
+U+03C9	w	Grek	GREEK SMALL LETTER OMEGA
+U+03BC	u	Grek	GREEK SMALL LETTER MU
+
+# --- Greek uppercase -> Latin. UTS #39 ------------------------------------
+U+0391	a	Grek	GREEK CAPITAL LETTER ALPHA
+U+0392	b	Grek	GREEK CAPITAL LETTER BETA
+U+0395	e	Grek	GREEK CAPITAL LETTER EPSILON
+U+0396	z	Grek	GREEK CAPITAL LETTER ZETA
+U+0397	h	Grek	GREEK CAPITAL LETTER ETA
+U+0399	i	Grek	GREEK CAPITAL LETTER IOTA
+U+039A	k	Grek	GREEK CAPITAL LETTER KAPPA
+U+039C	m	Grek	GREEK CAPITAL LETTER MU
+U+039D	n	Grek	GREEK CAPITAL LETTER NU
+U+039F	o	Grek	GREEK CAPITAL LETTER OMICRON
+U+03A1	p	Grek	GREEK CAPITAL LETTER RHO
+U+03A4	t	Grek	GREEK CAPITAL LETTER TAU
+U+03A5	y	Grek	GREEK CAPITAL LETTER UPSILON
+U+03A7	x	Grek	GREEK CAPITAL LETTER CHI
+U+0393	r	Grek	GREEK CAPITAL LETTER GAMMA
+U+0394	d	Grek	GREEK CAPITAL LETTER DELTA
+U+039B	l	Grek	GREEK CAPITAL LETTER LAMDA
+U+03A0	p	Grek	GREEK CAPITAL LETTER PI; corrected 2026-09-29, was wrongly mapped to n
+U+03A3	s	Grek	GREEK CAPITAL LETTER SIGMA
+U+03A6	f	Grek	GREEK CAPITAL LETTER PHI
+U+03A8	ps	Grek	GREEK CAPITAL LETTER PSI
+
+# --- Punctuation, spacing and width confusables. UTS #39 -----------------
+U+2009	 	Other	EN SPACE; folds to a plain space
+U+200A	 	Other	HAIR SPACE; folds to a plain space
+U+202F	 	Other	NARROW NO-BREAK SPACE; folds to a plain space
+U+2007	 	Other	FIGURE SPACE; folds to a plain space
+U+2010	-	Other	HYPHEN
+U+2011	-	Other	NON-BREAKING HYPHEN
+U+2012	-	Other	FIGURE DASH
+U+2013	-	Other	EN DASH
+U+2014	-	Other	EM DASH
+U+2015	-	Other	HORIZONTAL BAR
+U+FE58	-	Other	SMALL EM DASH
+U+FF0D	-	Other	FULLWIDTH HYPHEN-MINUS
+U+FF61	.	Other	HALFWIDTH IDEOGRAPHIC FULL STOP
+U+3002	.	Other	IDEOGRAPHIC FULL STOP
+U+FE52	.	Other	SMALL FULL STOP
+U+FF20	@	Other	FULLWIDTH COMMERCIAL AT
+U+300C	"	Other	LEFT CORNER BRACKET; NFKC target of U+FF62, which is why that row never fires
+U+300D	"	Other	RIGHT CORNER BRACKET; NFKC target of U+FF63, which is why that row never fires
+U+00AB	"	Other	LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
+U+00BB	"	Other	RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+U+201C	"	Other	LEFT DOUBLE QUOTATION MARK
+U+201D	"	Other	RIGHT DOUBLE QUOTATION MARK
+U+201E	"	Other	DOUBLE LOW-9 QUOTATION MARK
+
+# --- Latin-1, extended Latin, Greek-in-Latin and Cherokee. UTS #39 --------
+U+0131	i	Latn	LATIN SMALL LETTER DOTLESS I
+U+0237	j	Latn	LATIN SMALL LETTER DOTLESS J
+U+0138	k	Latn	LATIN SMALL LETTER KRA
+U+017F	s	Latn	LATIN SMALL LETTER LONG S
+U+0261	g	Latn	LATIN SMALL LETTER SCRIPT G
+U+0251	a	Latn	LATIN SMALL LETTER ALPHA
+U+0275	o	Latn	LATIN SMALL LETTER OMEGA
+U+028F	v	Latn	LATIN SMALL LETTER Y
+U+1D0F	o	Latn	LATIN LETTER SMALL CAPITAL O
+U+2170	i	Latn	SMALL ROMAN NUMERAL ONE
+U+217C	l	Latn	SMALL ROMAN NUMERAL FIFTY
+U+217E	d	Latn	SMALL ROMAN NUMERAL FIVE HUNDRED
+U+2160	i	Latn	ROMAN NUMERAL ONE
+U+13A0	g	Latn	CHEROKEE LETTER GO
+U+13F4	w	Latn	CHEROKEE LETTER A
+U+0578	n	Armn	ARMENIAN SMALL LETTER VO
+U+0586	f	Armn	ARMENIAN SMALL LETTER FEH
+U+2090	a	Other	LATIN SUBSCRIPT SMALL LETTER A
+U+2091	e	Other	LATIN SUBSCRIPT SMALL LETTER E
+U+2092	o	Other	LATIN SUBSCRIPT SMALL LETTER O
+U+2093	x	Other	LATIN SUBSCRIPT SMALL LETTER X
+
+# --- UTS #39 rows added to close probe-found gaps (2026-09-29) --------------
+# The rows above are a hand transcription. A regression probe that feeds a fully Greek
+# spelling of "paypal" (pi-alpha-upsilon-pi-alpha-lambda) exposed a real detection gap:
+# GREEK PI and GREEK LAMDA were absent, so the word reduced to a skeleton still full of
+# Greek characters and lookalike_strong never fired. Transliterating only SOME Greek letters
+# (alpha, rho, upsilon) while omitting pi and lambda produced a confidently WRONG skeleton,
+# which is worse than no folding at all.
+#
+# TONE ACCENTS are included deliberately. A phisher using Greek keyboard layout produces
+# accented forms (upsilon with tonos) far more often than the bare letters, and a table that
+# handles bare upsilon but not accented upsilon fails on exactly the traffic it is meant to
+# catch. GREEK THETA is deliberately NOT mapped: it resembles "0", and 0 is itself a source
+# row mapping to "o", so theta->0->o would break the load-time idempotence invariant.
+U+03C0	p	Grek	GREEK SMALL LETTER PI
+U+03BB	l	Grek	GREEK SMALL LETTER LAMDA
+U+03AA	a	Grek	GREEK CAPITAL LETTER ALPHA WITH TONOS
+U+03AB	a	Grek	GREEK SMALL LETTER ALPHA WITH OXIA
+U+03AC	a	Grek	GREEK SMALL LETTER ALPHA WITH TONOS
+U+03AF	i	Grek	GREEK SMALL LETTER IOTA WITH TONOS
+U+03CC	o	Grek	GREEK SMALL LETTER OMICRON WITH TONOS
+U+03CD	y	Grek	GREEK SMALL LETTER UPSILON WITH TONOS; see U+03C5 note on the y/u choice
+U+03CE	w	Grek	GREEK SMALL LETTER OMEGA WITH TONOS
+U+03B4	d	Grek	GREEK SMALL LETTER DELTA
+U+03DB	c	Grek	GREEK LUNATE SIGMA SYMBOL
+
+# DEAD ROWS DELIBERATELY NOT ADDED, despite appearing in UTS #39's confusables data:
+#   U+03D5 GREEK PHI SYMBOL, U+03D6 GREEK PI SYMBOL, U+03F2 GREEK UPSILON WITH HOOK,
+#   U+03F9 GREEK CAPITAL LUNATE SIGMA SYMBOL, U+FF62/U+FF63 HALFWIDTH CORNER BRACKETS
+# These are CANONICALLY or COMPATIBILITY EQUIVALENT to other code points. TextNormalizer
+# applies NFKC before consulting this table, so normalise() never sees the symbol form at
+# all - it is already rewritten to the other code point, which is mapped here. Adding rows
+# for them would be unreachable configuration: they would appear in mappingCount(), look
+# load-bearing in review, and never execute. This was found by a probe that compared every
+# row on disk against what normalise() actually does, and it is why the U+FF62/U+FF63 rows
+# were repointed at U+300C/U+300D: the old rows were dead AND their intended effect
+# (mapping bracket variants to a quote) was silently not happening.
+
+# --- Cyrillic rows added to close probe-found gaps (2026-09-29) -------------
+# EF and IO-WITH-DIAERESIS render as o/e to a Latin reader and were missing. They are the
+# reason "poypal" style substitutions were silently undetected in single-character probes.
+U+0424	o	Cyr	CYRILLIC CAPITAL LETTER EF
+U+0444	o	Cyr	CYRILLIC SMALL LETTER EF
+U+042D	e	Cyr	CYRILLIC CAPITAL LETTER E
+U+044D	e	Cyr	CYRILLIC SMALL LETTER E
+U+0401	e	Cyr	CYRILLIC CAPITAL LETTER IO WITH DIAERESIS
+U+0451	e	Cyr	CYRILLIC SMALL LETTER IO WITH DIAERESIS
+U+042C	b	Cyr	CYRILLIC CAPITAL LETTER SOFT SIGN
+U+044C	b	Cyr	CYRILLIC SMALL LETTER SOFT SIGN
+
+# --- Leetspeak digit/letter folding. NOT from UTS #39 - see header. -------
+0	o	leet	digit zero
+1	l	leet	digit one; this is why paypa1.com matches paypal.com
+3	e	leet	digit three
+4	a	leet	digit four
+5	s	leet	digit five
+7	t	leet	digit seven
+8	b	leet	digit eight
+6	g	leet	digit six
+9	g	leet	digit nine

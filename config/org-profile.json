@@ -1,0 +1,78 @@
+{
+  "_comment": [
+    "Item 3 organisation profile for Cipher Squad.",
+    "Every field here is optional. Omit one and the features that depend on it report",
+    "observed=false and drop out of C_cov, rather than guessing a value.",
+    "IP ranges below are the RFC 5737 TEST-NET documentation blocks. They are placeholders",
+    "for the real sending ranges and must be replaced before this profile drives production alerts."
+  ],
+
+  "own_domains": [
+    "ciphersquad.io",
+    "ciphersquad.se"
+  ],
+
+  "brands": [
+    "PayPal",
+    "Microsoft",
+    "Microsoft 365",
+    "Stripe",
+    "Dropbox",
+    "DocuSign",
+    "DHL",
+    "FedEx",
+    "Amazon",
+    "Apple",
+    "Google",
+    "Coinbase",
+    "Binance",
+    "GitHub",
+    "Atlassian",
+    "Zoom",
+    "Netskope",
+    "Okta",
+    "Docusign",
+    "Netlify"
+  ],
+
+  "executives": [
+    {
+      "name": "Aditi Raghavan",
+      "title": "Chief Executive Officer",
+      "aliases": ["Aditi R", "A. Raghavan"]
+    },
+    {
+      "name": "Marcus Feld",
+      "title": "Chief Financial Officer",
+      "aliases": ["Marcus F", "M. Feld"]
+    },
+    {
+      "name": "Yuki Tanaka",
+      "title": "Chief Technology Officer",
+      "aliases": ["Yuki T", "Y. Tanaka"]
+    },
+    {
+      "name": "Priya Nandakumar",
+      "title": "Head of Security",
+      "aliases": ["Priya N", "P. Nandakumar"]
+    }
+  ],
+
+  "partner_domains": [
+    "cloudflare.com",
+    "github.com",
+    "circleci.com",
+    "letsencrypt.org",
+    "okta.com"
+  ],
+
+  "mail_ranges": [
+    "203.0.113.0/24",
+    "198.51.100.0/24",
+    "192.0.2.128/25"
+  ],
+
+  "abuse_contact": "abuse@ciphersquad.io",
+
+  "updated_at_epoch_seconds": 1767225600
+}

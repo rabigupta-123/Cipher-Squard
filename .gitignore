@@ -1,0 +1,26 @@
+# Build and compiled artifacts
+build/
+target/
+*.class
+*.jar
+*.war
+
+# Temporary outputs and test logs
+*.log
+test_output*.txt
+suite_output*.txt
+debug/
+cleanstate/
+*.tmp
+*.bak
+
+# Environment and sensitive files
+.env
+.env.local
+
+# IDE and OS files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
