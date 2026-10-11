@@ -3,11 +3,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * ReportGenerator produces immutable, court-admissible forensic artifacts in PDF format.
+ * ReportGenerator produces immutable forensic artifacts in PDF format designed to support evidentiary requirements.
  *
  * <p>Implementation Details:
  * <ul>
- *   <li>Standard: Compliant with ISO 32000-1 / PDF 1.4 specification.</li>
+ *   <li>Standard: Compliant with PDF 1.4 specification.</li>
  *   <li>Zero Runtime Dependencies: Implemented purely using standard JDK 25 I/O streams
  *       ({@link java.io.ByteArrayOutputStream}) without requiring external native binaries
  *       or third-party libraries (e.g. iText, Apache PDFBox, OpenPDF).</li>

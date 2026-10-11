@@ -1,14 +1,14 @@
-version: '3.8'
 services:
-  sentryai:
+  cipher-squad:
     build: .
+    container_name: cipher-squad-soc
     ports:
       - "8080:8080"
     volumes:
-      - sentry_data:/data
+      - cipher_data:/data
     environment:
       - CIPHER_SQUAD_DATA_DIR=/data
-    restart: always
+    restart: unless-stopped
 
 volumes:
-  sentry_data:
+  cipher_data:
