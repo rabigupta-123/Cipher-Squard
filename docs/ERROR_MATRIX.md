@@ -1,0 +1,30 @@
+# CIPHER SQUAD — Comprehensive Error Matrix & Observability
+**Platform:** Pure Java JDK 25 Local-First Threat Detection Engine  
+**Observability Standard:** Structured Console Diagnostics, Typed Exceptions, and Audit Chain Telemetry
+
+---
+
+## 1. Error Matrix
+
+| Component | Failure Scenario | Expected Behavior | Actual Behavior | HTTP Code / Internal Error | Logging Behavior | User-Facing Message | Recovery Strategy | Test Suite & Test Name | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **HTTP Dispatcher** | Unmapped URL route requested | Returns 404 with structured JSON | Returns 404 JSON with `ok: false` | 404 `not_found` | Normal request dispatch log | "no such resource" | Client issues valid endpoint | `phase3:t02_routing` | **VERIFIED** |
+| **HTTP Dispatcher** | Unsupported HTTP method on route | Returns 405 with `Allow` header | Returns 405 and sets `Allow: GET` | 405 `method_not_allowed` | Normal request log | "this resource accepts GET" | Client switches to accepted verb | `phase3:t02_routing` | **VERIFIED** |
+| **HTTP Dispatcher** | Path traversal attempt (`..`, `%00`) | Rejects path before disk resolution | Blocks request; returns 400 | 400 `bad_path` | Security log warning | "path contains illegal characters" | Discard hostile probe | `phase3:t03_traversal` | **VERIFIED** |
+| **HTTP Reader** | Request body exceeds 50MB ceiling | Halts stream read; returns 413 | Throws `RequestException(413)` | 413 `payload_too_large` | Stream limit error logged | "request entity too large" | Client sends bounded file | `phase3:t04_oversized` | **VERIFIED** |
+| **HTTP Reader** | Malformed percent escape (`%ZZ`) | Rejects unparseable encoding | Throws `RequestException(400)` | 400 `malformed_escape` | Malformed escape logged | "malformed percent-escape sequence" | Client encodes query properly | `phase3:t05_badPercent` | **VERIFIED** |
+| **Auth Manager** | Missing credentials on private route | Returns 401 with Basic challenge | Emits 401 and `WWW-Authenticate` | 401 `unauthorized` | Unauthorized access log | "authentication required" | Client supplies valid credentials | `phase3:t06_authSession` | **VERIFIED** |
+| **Auth Manager** | 5 consecutive failed logins | Triggers 15-minute account lockout | Locks account; rejects valid PW | 401 `account_locked` | Appends `login.failure` audit record | "account is temporarily locked" | Wait for 15-min lockout expiry | `phase3:t07_lockout` | **VERIFIED** |
+| **SSRF Filter** | Target hostname is loopback (`127.1`) | Denies target IP/hostname | Blocks before socket creation | `deny("loopback")` | SSRF refusal logged | Host rejected by SSRF guard | Operator uses public domain | `phase3:t08_ssrf` | **VERIFIED** |
+| **SSRF Filter** | Target is cloud metadata (`169.254...`) | Denies link-local / metadata | Blocks before socket creation | `deny("cloud_metadata")`| SSRF refusal logged | Host rejected by SSRF guard | Operator uses public domain | `phase3:t08_ssrf` | **VERIFIED** |
+| **SSRF Filter** | Hostname resolves via DNS to private IP | Rebinds detected after resolution | Resolves and rejects private IP | `deny("private_network")`| DNS rebinding refusal logged | Host rejected by SSRF guard | Prevent DNS rebinding bypass | `phase3:t08_ssrf` | **VERIFIED** |
+| **Audit Logger** | Record modified in `audit.ndjson` | Detects hash divergence at line | Recomputes hash; flags mismatch | `ChainBrokenException` | SEVERE: hash mismatch at index N | "audit chain broken at index N" | Fail closed; seal audit store | `Phase1Regression:T15` | **VERIFIED** |
+| **Audit Logger** | Record deleted from `audit.ndjson` | Detects sequence gap in index | Identifies index gap at line | `ChainBrokenException` | SEVERE: expected index gap | "expected index N but found N+1"| Fail closed; seal audit store | `Regression:t07` | **VERIFIED** |
+| **Audit Logger** | Append attempted on broken chain | Refuses append to protect evidence | Throws `ChainBrokenException` | 503 `audit_chain_broken`| SEVERE: refused append to chain | "audit log does not reconcile" | Operator archives / repairs log | `Regression:t07` | **VERIFIED** |
+| **Audit Logger** | Lock contention > 10s on write | Bounded retry terminates; fails | Throws `IOException` after 10s | 503 `service_unavailable`| SEVERE: audit lock timeout | "audit log is locked by writer" | Retry after lock holder exits | `Regression:t06` | **VERIFIED** |
+| **MIME Parser** | Empty RFC 822 email submitted | Returns 400 Bad Request | Rejects empty stream | 400 `bad_message` | Warning logged to parser | "email message must not be empty"| Client submits valid RFC 822 | `EmailParser:main` | **VERIFIED** |
+| **MIME Parser** | Truncated multipart boundary | Graceful degradation on parts | Parses valid headers/parts | Warning logged in message | Partial parse warning recorded | Client inspects partial parse | `EmailParser:main` | **VERIFIED** |
+| **Softmax Engine**| Feature vector has NaN or Infinity | Rejects invalid floating point | Throws `IllegalArgumentException` | Internal calculation error | Arithmetic check logged | Features must be finite numbers | Clamped to $[-2.5, 2.5]$ | `Phase1Regression:T3` | **VERIFIED** |
+| **Softmax Engine**| Logits magnitude reaches $\pm 10^9$ | Prevents numeric overflow/underflow | Max-shifted subtraction applied | Numerically stable sum = 1.0 | None (handled transparently) | Probabilities finite in $[0, 1]$ | None required (stable formula) | `Phase1Regression:T6` | **VERIFIED** |
+| **Org Profile** | `org-profile.json` missing or empty | Yields `EMPTY` profile without crash | Returns unobserved flags | `observed=false` | Profile fallback warning logged | Epistemic status unobserved | Populate `org-profile.json` | `Phase1Regression:Item3`| **VERIFIED** |
+| **Report Engine** | PDF generation for non-existent case | Returns 404 Not Found | Inspects store; emits 404 | 404 `case_not_found` | Case lookup logged | "case not found" | Provide valid case identifier | `phase3:t13_report` | **VERIFIED** |

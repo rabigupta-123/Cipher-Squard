@@ -1,0 +1,222 @@
+openapi: 3.1.0
+info:
+  title: CIPHER SQUAD SOC Threat Detection API
+  description: Local-First AI-Powered Email Threat Detection, Geolocation & Forensic Intelligence Platform.
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8080
+    description: Local Loopback Server
+paths:
+  /index.html:
+    get:
+      summary: Serve Analyst Web Console
+      description: Serves the static single-page analyst web interface with CSP nonce hardening.
+      responses:
+        '200':
+          description: HTML console page
+          content:
+            text/html: {}
+
+  /api/analyze:
+    post:
+      summary: Analyze Email Message
+      description: Accepts an RFC 5322 MIME email message for parsing, feature extraction, scoring, and attribution.
+      parameters:
+        - name: openCase
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Explicitly force creation of a persistent case.
+      requestBody:
+        required: true
+        content:
+          message/rfc822:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Complete forensic detection analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResult'
+        '400':
+          description: Bad or unparseable email message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '413':
+          description: Payload exceeds size ceiling
+
+  /api/cases:
+    get:
+      summary: List Forensic Cases
+      description: Returns paginated forensic cases from local NDJSON store.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 500
+      responses:
+        '200':
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CaseRecord'
+                  truncated:
+                    type: boolean
+
+  /api/audit/verify:
+    get:
+      summary: Verify Audit Chain
+      description: Re-computes cryptographic linear SHA-256 hash chain and validates Ed25519 digital signatures.
+      responses:
+        '200':
+          description: Audit chain status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditVerification'
+
+  /export/stix:
+    get:
+      summary: Export STIX 2.1 Bundle by Case
+      parameters:
+        - name: case
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: message
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: STIX 2.1 JSON bundle
+          content:
+            application/stix+json: {}
+    post:
+      summary: Export STIX 2.1 Bundle from JSON
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: STIX 2.1 JSON bundle
+          content:
+            application/stix+json: {}
+
+  /api/report:
+    get:
+      summary: Generate Forensic PDF Report
+      parameters:
+        - name: caseId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Standalone PDF 1.4 forensic report
+          content:
+            application/pdf: {}
+
+components:
+  schemas:
+    AnalysisResult:
+      type: object
+      properties:
+        documentId:
+          type: string
+        score:
+          type: object
+          properties:
+            verdict:
+              type: string
+            riskFinal:
+              type: number
+            confidence:
+              type: number
+            band:
+              type: string
+        attribution:
+          type: object
+        hops:
+          type: array
+          items:
+            type: object
+        caseId:
+          type: string
+          nullable: true
+
+    CaseRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        documentId:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+        riskFinal:
+          type: number
+        verdict:
+          type: string
+        band:
+          type: string
+
+    AuditVerification:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        valid:
+          type: boolean
+        assurance:
+          type: string
+          enum: [EMPTY, UNSIGNED, SIGNED, TAMPERED]
+        records:
+          type: integer
+        headHash:
+          type: string
+        headSignatureValid:
+          type: boolean
+        lastSignedIndex:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: invalid_request
+        message:
+          type: string
+          example: The request payload could not be parsed.
+        status:
+          type: integer
+          example: 400
